@@ -1,18 +1,25 @@
 package io.github.darkstarworks.pluginpulse;
 
+import io.github.darkstarworks.pluginpulse.download.BackupManager;
+import io.github.darkstarworks.pluginpulse.download.DownloadPipeline;
+import io.github.darkstarworks.pluginpulse.download.PluginJarLocator;
 import io.github.darkstarworks.pluginpulse.notify.JoinNotifyListener;
 import io.github.darkstarworks.pluginpulse.notify.UpdateNotifier;
 import io.github.darkstarworks.pluginpulse.platform.SchedulerAdapter;
+import io.github.darkstarworks.pluginpulse.source.CustomJsonSource;
 import io.github.darkstarworks.pluginpulse.source.HttpSupport;
 import io.github.darkstarworks.pluginpulse.source.SourceContext;
 import io.github.darkstarworks.pluginpulse.source.UpdateSource;
 import io.github.darkstarworks.pluginpulse.state.IgnoreStore;
+import io.github.darkstarworks.pluginpulse.state.PendingUpdateStore;
 import io.github.darkstarworks.pluginpulse.version.Version;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 
 /**
@@ -51,9 +59,15 @@ public final class Updater {
     private final UpdateNotifier notifier;
     private final HttpSupport http;
     private final IgnoreStore state;
+    private final PendingUpdateStore pendingStore;
+    private final boolean requireHash;
+    private final int backupRetention;
+    private final Supplier<File> jarFileSupplier;
 
     private volatile UpdateInfo pendingUpdate;
     private volatile UpdateCheckResult lastResult;
+    private volatile Map<String, String> downloadHeaders = Map.of();
+    private volatile String stagedVersion;
     private SchedulerAdapter.TaskHandle periodicTask;
     private JoinNotifyListener joinListener;
 
@@ -69,9 +83,12 @@ public final class Updater {
         this.scheduler = b.scheduler != null ? b.scheduler : SchedulerAdapter.create(b.plugin);
         this.http = new HttpSupport(buildUserAgent(b));
         this.notifier = new UpdateNotifier(b.prefix, b.commandRoot, b.messageOverrides);
-        this.state = new IgnoreStore(
-                b.plugin.getDataFolder().toPath().resolve("pluginpulse").resolve("state.json"),
-                b.plugin.getLogger());
+        Path stateDir = b.plugin.getDataFolder().toPath().resolve("pluginpulse");
+        this.state = new IgnoreStore(stateDir.resolve("state.json"), b.plugin.getLogger());
+        this.pendingStore = new PendingUpdateStore(stateDir.resolve("pending-update.json"), b.plugin.getLogger());
+        this.requireHash = b.requireHash;
+        this.backupRetention = b.backupRetention;
+        this.jarFileSupplier = b.jarFileSupplier;
     }
 
     private static String buildUserAgent(Builder b) {
@@ -83,6 +100,7 @@ public final class Updater {
 
     /** Register the join listener (mode >= NOTIFY) and begin periodic checks. */
     public void start() {
+        processPendingMarker();
         if (mode.atLeast(UpdateMode.NOTIFY)) {
             joinListener = new JoinNotifyListener(this);
             Bukkit.getPluginManager().registerEvents(joinListener, plugin);
@@ -118,6 +136,117 @@ public final class Updater {
         })));
     }
 
+    /**
+     * Reconcile the staged-update marker on boot: if we're now running the
+     * staged version the update applied; otherwise the staged jar never got
+     * swapped in (or keeps failing) and we warn rather than re-stage forever.
+     */
+    private void processPendingMarker() {
+        PendingUpdateStore.Pending pending = pendingStore.load();
+        if (pending == null) return;
+        if (Version.parse(pending.stagedVersion(), track).compareTo(Version.parse(currentVersion, track)) == 0) {
+            plugin.getLogger().info("Update to " + pending.stagedVersion() + " applied successfully."
+                    + (pending.backupPath() != null ? " Previous version backed up at " + pending.backupPath() : ""));
+            pendingStore.clear();
+            return;
+        }
+        int attempts = pending.attempts() + 1;
+        pendingStore.save(new PendingUpdateStore.Pending(pending.stagedVersion(), pending.backupPath(), attempts));
+        stagedVersion = pending.stagedVersion();
+        plugin.getLogger().warning("A staged update to " + pending.stagedVersion() + " has not applied after "
+                + attempts + " boot(s); still running " + currentVersion + ". Check the server's plugin "
+                + "update folder, or restore the previous jar with the update restore command.");
+    }
+
+    // ==== Download & stage (mode >= DOWNLOAD) ====
+
+    /**
+     * Download the pending update, verify it, back up the running jar and
+     * stage the new one for install on the next restart. Reports progress to
+     * {@code sender}. Requires a prior check to have found an update.
+     */
+    public void downloadAndStage(CommandSender sender) {
+        if (!mode.atLeast(UpdateMode.DOWNLOAD)) {
+            sender.sendMessage(plugin.getName() + ": downloads are disabled (mode " + mode + ").");
+            return;
+        }
+        UpdateInfo info = pendingUpdate;
+        if (info == null) {
+            sender.sendMessage(plugin.getName() + ": no update pending — run a check first.");
+            return;
+        }
+        if (info.version().equalsIgnoreCase(stagedVersion)) {
+            sender.sendMessage(plugin.getName() + ": " + info.version()
+                    + " is already staged — restart the server to apply it.");
+            return;
+        }
+        sender.sendMessage(plugin.getName() + ": downloading " + info.version() + "...");
+        scheduler.runAsync(() -> {
+            String message = stage(info);
+            scheduler.runGlobal(() -> sender.sendMessage(plugin.getName() + ": " + message));
+        });
+    }
+
+    /** Stage the given update. Returns a human-readable outcome line. */
+    private String stage(UpdateInfo info) {
+        try {
+            Path currentJar = PluginJarLocator.locate(plugin, jarFileSupplier);
+            DownloadPipeline pipeline = buildPipeline();
+            DownloadPipeline.StagingResult result =
+                    pipeline.downloadAndStage(info, downloadHeaders, currentJar, currentVersion);
+            pendingStore.save(new PendingUpdateStore.Pending(
+                    info.version(), result.backupFile().toString(), 0));
+            stagedVersion = info.version();
+            String note = info.restartRequired()
+                    ? "restart the server to apply it."
+                    : "it will apply on the next restart.";
+            plugin.getLogger().info("Staged update " + info.version() + " -> " + result.stagedFile());
+            return "staged " + info.version() + " — " + note;
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.WARNING, "Update staging failed", e);
+            return "update failed: " + e.getMessage();
+        }
+    }
+
+    /**
+     * Stage the most recent backup jar for install on the next restart —
+     * the supported one-command recovery path after a bad update.
+     */
+    public void restoreBackup(CommandSender sender) {
+        scheduler.runAsync(() -> {
+            String message;
+            try {
+                Path currentJar = PluginJarLocator.locate(plugin, jarFileSupplier);
+                BackupManager backups = buildBackupManager();
+                Path latest = backups.latestBackup();
+                if (latest == null) {
+                    message = "no backups found.";
+                } else {
+                    buildPipeline().stageLocal(latest, currentJar);
+                    pendingStore.clear();
+                    stagedVersion = null;
+                    message = "staged backup " + latest.getFileName() + " — restart the server to apply it.";
+                }
+            } catch (Exception e) {
+                plugin.getLogger().log(Level.WARNING, "Backup restore failed", e);
+                message = "restore failed: " + e.getMessage();
+            }
+            String finalMessage = message;
+            scheduler.runGlobal(() -> sender.sendMessage(plugin.getName() + ": " + finalMessage));
+        });
+    }
+
+    private DownloadPipeline buildPipeline() {
+        Path dataDir = plugin.getDataFolder().toPath().resolve("pluginpulse");
+        return new DownloadPipeline(http, dataDir.resolve("tmp"),
+                Bukkit.getUpdateFolderFile().toPath(), buildBackupManager(), requireHash, plugin.getLogger());
+    }
+
+    private BackupManager buildBackupManager() {
+        return new BackupManager(plugin.getDataFolder().toPath().resolve("pluginpulse").resolve("backups"),
+                backupRetention, plugin.getLogger());
+    }
+
     // ==== Check logic ====
 
     private void runCheck(boolean notify, Consumer<UpdateCheckResult> callback) {
@@ -125,6 +254,10 @@ public final class Updater {
         lastResult = result;
         if (result.status() == UpdateCheckResult.Status.UPDATE_AVAILABLE) {
             pendingUpdate = result.info();
+            if (mode == UpdateMode.AUTO_STAGE && !result.info().version().equalsIgnoreCase(stagedVersion)) {
+                plugin.getLogger().info("Auto-staging update " + result.info().version() + "...");
+                plugin.getLogger().info(stage(result.info()));
+            }
             if (notify && mode.atLeast(UpdateMode.NOTIFY)) {
                 notifier.notifyConsole(plugin.getName(), currentVersion, result.info());
                 scheduler.runGlobal(() -> Bukkit.getOnlinePlayers().stream()
@@ -144,6 +277,8 @@ public final class Updater {
         for (UpdateSource source : sources) {
             try {
                 UpdateInfo info = source.fetchLatest(ctx);
+                // Authenticated sources carry their headers over to the download.
+                downloadHeaders = source instanceof CustomJsonSource custom ? custom.headers() : Map.of();
                 state.recordCheck(info.version());
                 Version latest = Version.parse(info.version(), track);
                 Version current = Version.parse(currentVersion, track);
@@ -237,6 +372,9 @@ public final class Updater {
         private String changelogUrl;
         private String userAgentContact;
         private SchedulerAdapter scheduler;
+        private boolean requireHash = true;
+        private int backupRetention = 3;
+        private Supplier<File> jarFileSupplier;
         private final Map<String, String> messageOverrides = new HashMap<>();
 
         private Builder(JavaPlugin plugin) {
@@ -318,6 +456,31 @@ public final class Updater {
         /** Supply the host plugin's own scheduler abstraction instead of auto-detection. */
         public Builder scheduler(SchedulerAdapter scheduler) {
             this.scheduler = scheduler;
+            return this;
+        }
+
+        /**
+         * Whether staging refuses downloads that publish no checksum.
+         * Default true; consider false for GitHub repos without digest support.
+         */
+        public Builder requireHash(boolean requireHash) {
+            this.requireHash = requireHash;
+            return this;
+        }
+
+        /** How many jar backups to keep (default 3, minimum 1). */
+        public Builder backupRetention(int count) {
+            this.backupRetention = count;
+            return this;
+        }
+
+        /**
+         * Reflection-free way to hand over the running jar (call the protected
+         * {@code getFile()} from your plugin subclass). Recommended for
+         * ProGuard-processed plugins where reflection may break.
+         */
+        public Builder jarFileSupplier(Supplier<File> supplier) {
+            this.jarFileSupplier = supplier;
             return this;
         }
 

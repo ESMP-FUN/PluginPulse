@@ -13,9 +13,10 @@ point it at where you publish releases, and your plugin gains:
 - **Rate-limit citizenship** — identifying User-Agent (required by Modrinth),
   persisted check state, jittered intervals.
 - **Folia support** — automatic scheduler detection, or plug in your own adapter.
-
-Verified downloads, staging into the server's `plugins/update/` folder, backups,
-and an opt-in hot-reload engine are on the roadmap (see below).
+- **Verified one-command installs** — downloads are checksum-verified
+  (sha512 > sha256 > sha1), the running jar is backed up, and the new jar is
+  staged into the server's `plugins/update/` folder to apply on the next
+  restart. One-command rollback to the latest backup.
 
 ## Requirements
 
@@ -32,7 +33,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.darkstarworks.pluginpulse:pluginpulse-core:v0.1.0")
+    implementation("com.github.darkstarworks.PluginPulse:pluginpulse-core:v0.2.0")
 }
 ```
 
@@ -70,8 +71,35 @@ public final class MyPlugin extends JavaPlugin {
 }
 ```
 
-Hook `updater.checkNow(sender)` into a `/myplugin update` subcommand for manual
-checks, and `updater.ignoreVersion(v)` to let admins mute a release.
+### Commands
+
+Delegate your `/myplugin update ...` subcommand to the bundled handler:
+
+```java
+UpdateSubcommand updateCmd = new UpdateSubcommand(updater);
+// in your command executor:
+case "update" -> updateCmd.handle(sender, Arrays.copyOfRange(args, 1, args.length));
+```
+
+which provides `check`, `download`/`install`, `ignore <v>`, `unignore <v>`,
+`restore` (stage the latest backup for rollback), and `status`.
+
+### Update modes
+
+| Mode | Behavior |
+|---|---|
+| `CHECK_ONLY` | silent checks; results via API only |
+| `NOTIFY` | + console & in-game notices (default) |
+| `DOWNLOAD` | + admins may `update download` to stage a verified jar for the next restart |
+| `AUTO_STAGE` | + new releases are downloaded, verified and staged automatically |
+
+Staging writes the new jar into the server's update folder under the running
+jar's exact filename (required by Bukkit's swap-on-restart mechanism), after
+backing up the current jar to `plugins/<plugin>/pluginpulse/backups/`
+(retention configurable via `.backupRetention(n)`). Downloads without a
+published checksum are refused unless you opt out with `.requireHash(false)`.
+A `pending-update.json` marker tracks whether a staged update actually applied
+on the next boot; if it didn't, the plugin warns instead of re-staging forever.
 
 ## Sources
 
@@ -117,9 +145,6 @@ All notices are MiniMessage templates with `<prefix>`, `<current>`, `<latest>`,
 
 ## Roadmap
 
-- **v0.2** — verified download pipeline: sha512/sha256 check, backup of the
-  current jar, staging into `plugins/update/` for install-on-restart, and an
-  `UpdateSubcommand` helper.
 - **v0.3** — opt-in hot-reload engine (`pluginpulse-hotreload`): unload, swap,
   reload without a restart, with hard safety gates (refused on Folia and for
   plugins with dependents).
