@@ -33,7 +33,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.darkstarworks.PluginPulse:pluginpulse-core:v0.2.0")
+    implementation("com.github.darkstarworks.PluginPulse:pluginpulse-core:v0.3.0")
 }
 ```
 
@@ -81,8 +81,9 @@ UpdateSubcommand updateCmd = new UpdateSubcommand(updater);
 case "update" -> updateCmd.handle(sender, Arrays.copyOfRange(args, 1, args.length));
 ```
 
-which provides `check`, `download`/`install`, `ignore <v>`, `unignore <v>`,
-`restore` (stage the latest backup for rollback), and `status`.
+which provides `check`, `download`/`install`, `apply` (hot reload, when
+enabled), `ignore <v>`, `unignore <v>`, `restore` (stage the latest backup
+for rollback), and `status`.
 
 ### Update modes
 
@@ -143,11 +144,38 @@ All notices are MiniMessage templates with `<prefix>`, `<current>`, `<latest>`,
 .message(UpdateNotifier.KEY_PLAYER, "<prefix> <latest> is out! <click:open_url:'<page>'>[Get it]</click>")
 ```
 
-## Roadmap
+## Hot reload (opt-in, use with care)
 
-- **v0.3** — opt-in hot-reload engine (`pluginpulse-hotreload`): unload, swap,
-  reload without a restart, with hard safety gates (refused on Folia and for
-  plugins with dependents).
+The separate `pluginpulse-hotreload` artifact can apply a staged update
+**without a restart**: it unloads the running plugin (disable, unregister
+listeners/tasks/services/channels/commands, remove plugin-manager bookkeeping,
+close the classloader — which also releases the Windows jar lock), swaps the
+jar, and loads + enables the new version. If the new version fails to load it
+rolls back to the automatic backup.
+
+```kotlin
+implementation("com.github.darkstarworks.PluginPulse:pluginpulse-hotreload:v0.3.0")
+```
+
+```java
+.reloadEngine(HotReloadEngine.create())   // on the Updater builder
+```
+
+Admins then get `update apply` (after `update download`) in addition to the
+restart path.
+
+**Hard limits, by design:**
+
+- Refused on **Folia** — regionized schedulers can't be torn down safely.
+- Refused while other enabled plugins **depend on yours** (hard or soft).
+- Your plugin must shut down cleanly: static state, thread pools, coroutine
+  dispatchers and objects other plugins captured from the old instance are
+  your responsibility. Repeated reloads can leak metaspace.
+- Works on Paper's legacy and 1.20.5+ plugin-manager internals; on unknown
+  future layouts it refuses with a clear message instead of corrupting state.
+
+Restart-install remains the recommended default; treat hot reload as a
+convenience for small, self-contained updates.
 
 ## License
 

@@ -51,6 +51,7 @@ public final class UpdateSubcommand {
                 }
             }
             case "restore" -> updater.restoreBackup(sender);
+            case "apply", "reload" -> updater.applyNow(sender);
             case "status" -> {
                 UpdateInfo pending = updater.pendingUpdate();
                 sender.sendMessage(pending != null
@@ -66,7 +67,7 @@ public final class UpdateSubcommand {
     /** Tab-completion options for the first argument after "update". */
     public List<String> tabComplete(String[] args) {
         if (args.length <= 1) {
-            return List.of("check", "download", "ignore", "unignore", "restore", "status");
+            return List.of("check", "download", "apply", "ignore", "unignore", "restore", "status");
         }
         return List.of();
     }

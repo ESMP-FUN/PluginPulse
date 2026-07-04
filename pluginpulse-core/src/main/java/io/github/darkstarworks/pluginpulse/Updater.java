@@ -63,6 +63,7 @@ public final class Updater {
     private final boolean requireHash;
     private final int backupRetention;
     private final Supplier<File> jarFileSupplier;
+    private final ReloadEngine reloadEngine;
 
     private volatile UpdateInfo pendingUpdate;
     private volatile UpdateCheckResult lastResult;
@@ -89,6 +90,7 @@ public final class Updater {
         this.requireHash = b.requireHash;
         this.backupRetention = b.backupRetention;
         this.jarFileSupplier = b.jarFileSupplier;
+        this.reloadEngine = b.reloadEngine;
     }
 
     private static String buildUserAgent(Builder b) {
@@ -236,6 +238,53 @@ public final class Updater {
         });
     }
 
+    /**
+     * Apply a staged update immediately via the configured {@link ReloadEngine}
+     * — no restart. Refused when no engine is configured, nothing is staged,
+     * or the engine's safety checks fail. On success the running plugin
+     * instance (including this updater) is replaced.
+     */
+    public void applyNow(CommandSender sender) {
+        if (reloadEngine == null) {
+            sender.sendMessage(plugin.getName() + ": hot reload is not available — restart the server to apply.");
+            return;
+        }
+        String staged = stagedVersion;
+        if (staged == null) {
+            sender.sendMessage(plugin.getName() + ": nothing staged — run update download first.");
+            return;
+        }
+        String refusal = reloadEngine.refusalReason(plugin);
+        if (refusal != null) {
+            sender.sendMessage(plugin.getName() + ": hot reload refused: " + refusal
+                    + " Restart the server to apply the staged update.");
+            return;
+        }
+        scheduler.runGlobal(() -> {
+            try {
+                Path currentJar = PluginJarLocator.locate(plugin, jarFileSupplier);
+                Path stagedJar = Bukkit.getUpdateFolderFile().toPath()
+                        .resolve(currentJar.getFileName().toString());
+                if (!java.nio.file.Files.exists(stagedJar)) {
+                    sender.sendMessage(plugin.getName() + ": staged jar not found — run update download again.");
+                    return;
+                }
+                PendingUpdateStore.Pending pending = pendingStore.load();
+                Path backup = pending != null && pending.backupPath() != null
+                        ? Path.of(pending.backupPath()) : null;
+                sender.sendMessage(plugin.getName() + ": hot-reloading to " + staged
+                        + " — watch the console for the outcome.");
+                plugin.getLogger().warning("Hot reload starting: " + currentVersion + " -> " + staged);
+                // The marker is reconciled by the NEW instance's start().
+                reloadEngine.reload(plugin, stagedJar, backup);
+            } catch (Exception e) {
+                plugin.getLogger().log(Level.SEVERE, "Hot reload failed", e);
+                sender.sendMessage(plugin.getName() + ": hot reload failed: " + e.getMessage()
+                        + " — a restart may be required.");
+            }
+        });
+    }
+
     private DownloadPipeline buildPipeline() {
         Path dataDir = plugin.getDataFolder().toPath().resolve("pluginpulse");
         return new DownloadPipeline(http, dataDir.resolve("tmp"),
@@ -375,6 +424,7 @@ public final class Updater {
         private boolean requireHash = true;
         private int backupRetention = 3;
         private Supplier<File> jarFileSupplier;
+        private ReloadEngine reloadEngine;
         private final Map<String, String> messageOverrides = new HashMap<>();
 
         private Builder(JavaPlugin plugin) {
@@ -481,6 +531,16 @@ public final class Updater {
          */
         public Builder jarFileSupplier(Supplier<File> supplier) {
             this.jarFileSupplier = supplier;
+            return this;
+        }
+
+        /**
+         * Enable no-restart updates by supplying a {@link ReloadEngine}
+         * (from the separate {@code pluginpulse-hotreload} artifact).
+         * Off by default; restart-install is the recommended path.
+         */
+        public Builder reloadEngine(ReloadEngine engine) {
+            this.reloadEngine = engine;
             return this;
         }
 
