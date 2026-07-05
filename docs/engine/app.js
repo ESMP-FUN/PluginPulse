@@ -196,9 +196,25 @@
     }
   }
 
+  // Keep the three priority dropdowns a distinct 1/2/3 permutation: picking a
+  // number another source already holds swaps that source onto the old value,
+  // so two sources can never share a priority.
+  function setupPriorities() {
+    const selects = ['modrinth-priority', 'github-priority', 'hangar-priority'].map($);
+    const prev = new Map(selects.map((s) => [s, s.value]));
+    selects.forEach((sel) => {
+      sel.addEventListener('change', () => {
+        const clash = selects.find((o) => o !== sel && o.value === sel.value);
+        if (clash) clash.value = prev.get(sel);
+        selects.forEach((s) => prev.set(s, s.value));
+      });
+    });
+  }
+
   window.addEventListener('DOMContentLoaded', () => {
     $('file').addEventListener('change', onFile);
     $('preview').addEventListener('click', preview);
     $('generate').addEventListener('click', generate);
+    setupPriorities();
   });
 })();
