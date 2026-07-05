@@ -1,0 +1,18 @@
+name: PluginPulseCompanion
+version: '${version}'
+main: io.github.darkstarworks.ppcompanion.CompanionPlugin
+api-version: '1.20'
+author: darkstarworks
+description: Keeps your other installed plugins up to date, driven by PluginPulse.
+website: https://github.com/darkstarworks/PluginPulse
+folia-supported: true
+commands:
+  pluginpulse:
+    description: Manage updates for the plugins listed in config.yml.
+    usage: /pluginpulse [list|check|download|restore|reload] [plugin|all]
+    aliases: [ppc, pulse]
+    permission: pluginpulse.admin
+permissions:
+  pluginpulse.admin:
+    description: Manage PluginPulse Companion and see update notices.
+    default: op

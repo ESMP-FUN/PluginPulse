@@ -1,0 +1,40 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  PluginPulse Companion
+#  Keep your other plugins up to date without touching their code.
+#
+#  For each plugin you want managed, add an entry under "plugins:" below. The key
+#  must be the plugin's EXACT name as shown in /plugins. Give it ONE update source
+#  (modrinth, github, or hangar) and a mode.
+#
+#  After editing, run:  /pluginpulse reload
+# ─────────────────────────────────────────────────────────────────────────────
+
+plugins:
+  # ---- Examples (remove the '#' and adapt, or delete these) ----
+  #
+  # SomePlugin:
+  #   modrinth: some-project-slug   # the slug from its Modrinth URL
+  #   mode: notify                  # tell admins, don't download
+  #
+  # AnotherPlugin:
+  #   github: owner/repo            # its GitHub repository (uses Releases)
+  #   mode: download                # download + stage; applies on next restart
+  #   track: mc26                   # OPTIONAL: follow a "-mc26" release line
+  #
+  # HangarPlugin:
+  #   hangar: project-slug          # its Hangar project slug
+  #   mode: check-only              # silent: only /pluginpulse shows the result
+
+# What "mode" means:
+#   off          — ignore this plugin
+#   check-only   — check silently; results shown only via /pluginpulse
+#   notify       — check + tell admins on join and in console (no download)
+#   download     — check + download + stage; the update applies on next restart
+#   auto-stage   — like download, but staged automatically as soon as it's found
+
+# Contact string sent with API requests. Modrinth's API rules require a way to
+# reach you (an email or a project/website URL).
+user-agent-contact: "you@example.com"
+
+# How often to check each plugin, in hours (minimum 1).
+check-interval-hours: 6
