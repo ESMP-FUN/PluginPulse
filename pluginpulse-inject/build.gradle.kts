@@ -31,3 +31,25 @@ tasks.processResources {
         into("payload")
     }
 }
+
+// Regenerate the static assets the in-browser JS engine consumes:
+//   docs/engine/wrapper-template.class   (placeholder-name wrapper, from ASM)
+//   docs/engine/pluginpulse-core.jar     (un-relocated core, relocated in-browser)
+tasks.register<JavaExec>("emitWebAssets") {
+    group = "pluginpulse"
+    description = "Emit the wrapper template + core payload for the web engine into docs/engine."
+    dependsOn(tasks.named("classes"), ":pluginpulse-core:jar")
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("io.github.darkstarworks.pluginpulse.inject.TemplateEmitter")
+    val outDir = rootProject.file("docs/engine")
+    args(outDir.absolutePath)
+    doLast {
+        val coreJar = project(":pluginpulse-core").tasks.named("jar").get().outputs.files.singleFile
+        copy {
+            from(coreJar)
+            into(outDir)
+            rename { "pluginpulse-core.jar" }
+        }
+        println("Copied core payload to $outDir/pluginpulse-core.jar")
+    }
+}

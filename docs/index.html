@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PluginPulse — add auto-updates to a plugin jar</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <h1>PluginPulse Web Tool</h1>
+  <p class="lede">
+    Add an auto-updater to a compiled Paper/Spigot plugin — no source code, no build tools.
+    <strong>Everything runs in your browser. Your jar is never uploaded anywhere.</strong>
+  </p>
+
+  <section class="paths">
+    <p>Not what you need?</p>
+    <ul>
+      <li><a href="adopt-library.md">I build my own plugin</a> → shade the library.</li>
+      <li><a href="companion.md">I run a server and just want my plugins updated</a> → the companion plugin.</li>
+      <li>You're in the right place if you have a jar but can't or won't rebuild it.</li>
+    </ul>
+  </section>
+
+  <ol class="steps">
+    <li>
+      <h2>1. Choose your plugin jar</h2>
+      <input type="file" id="file" accept=".jar">
+      <button id="inspect" type="button">Inspect (optional)</button>
+      <pre id="inspectOut" class="inspect"></pre>
+      <p class="hint">Inspect shows the detected plugin name, main class, and whether the tool can process it —
+        without changing anything.</p>
+    </li>
+
+    <li>
+      <h2>2. Where do updates come from?</h2>
+      <p class="hint">Fill in <em>at least one</em>. The first is primary; the rest are fallbacks.</p>
+      <label>Modrinth project slug
+        <input id="modrinth" type="text" placeholder="e.g. my-plugin (from modrinth.com/plugin/<slug>)">
+      </label>
+      <label>GitHub repository
+        <input id="github" type="text" placeholder="e.g. owner/repo (uses Releases)">
+      </label>
+      <label>Hangar project slug
+        <input id="hangar" type="text" placeholder="e.g. my-plugin (from hangar.papermc.io)">
+      </label>
+    </li>
+
+    <li>
+      <h2>3. How should it behave?</h2>
+      <label>Update mode
+        <select id="mode">
+          <option value="notify" selected>notify — tell admins on join (no download)</option>
+          <option value="check-only">check-only — silent; only shown on command</option>
+          <option value="download">download — download &amp; stage; applies on restart</option>
+          <option value="auto-stage">auto-stage — download automatically when found</option>
+        </select>
+      </label>
+      <label>Command root <span class="opt">(optional)</span>
+        <input id="commandRoot" type="text" placeholder="e.g. /myplugin — self-registered if free">
+      </label>
+      <label>Permission <span class="opt">(optional)</span>
+        <input id="permission" type="text" placeholder="e.g. myplugin.admin — who sees notices">
+      </label>
+      <label>Contact <span class="opt">(recommended)</span>
+        <input id="contact" type="text" placeholder="email or URL — required by Modrinth's API rules">
+      </label>
+      <label>Release track <span class="opt">(optional)</span>
+        <input id="track" type="text" placeholder="e.g. mc26 — follow a &quot;-track&quot; release line">
+      </label>
+      <label>Check interval (hours) <span class="opt">(optional)</span>
+        <input id="interval" type="number" min="1" placeholder="6">
+      </label>
+      <label class="check"><input id="upgrade" type="checkbox"> Re-inject a jar that already has PluginPulse</label>
+    </li>
+
+    <li>
+      <h2>4. Generate</h2>
+      <label class="check"><input id="rights" type="checkbox">
+        I have the right to modify and redistribute this jar.</label>
+      <button id="generate" type="button" class="primary">Generate updated jar</button>
+      <p id="status" class="status"></p>
+      <p class="hint"><strong>Test the result on your own server before distributing it.</strong>
+        The tool can't verify the jar boots.</p>
+    </li>
+  </ol>
+
+  <section class="limits">
+    <h2>Limits</h2>
+    <ul>
+      <li>Handles the <strong>wrapper</strong> strategy only. Jars whose main class is <code>final</code> are refused —
+        use the command-line tool <code>pluginpulse-inject</code>, which instruments them in place.</li>
+      <li>Works on any class-file version (including Java&nbsp;25 / mc26), legacy <code>plugin.yml</code> and
+        <code>paper-plugin.yml</code>.</li>
+      <li>It can't confirm the jar runs — always test before sharing.</li>
+    </ul>
+    <p class="foot"><a href="https://github.com/darkstarworks/PluginPulse">PluginPulse on GitHub</a></p>
+  </section>
+</main>
+
+<script src="lib/jszip.min.js"></script>
+<script src="engine/constant-pool.js"></script>
+<script src="engine/injector.js"></script>
+<script src="engine/app.js"></script>
+</body>
+</html>
