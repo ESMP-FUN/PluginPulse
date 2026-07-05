@@ -97,8 +97,16 @@ public final class PluginPulse {
             if (contact != null) builder.userAgentContact(contact);
             String prefix = trimToNull(cfg.getString("prefix"));
             if (prefix != null) builder.prefix(prefix);
+            // Dual-track convention: the "-<track>" release line is the modern
+            // (Minecraft 26+) build. Apply it only when the server actually
+            // runs that generation, so a 1.21 server never follows -mc26
+            // releases and vice-versa. getBukkitVersion() ("1.21.8-R0.1-...")
+            // works on both Spigot and Paper (getMinecraftVersion() is Paper-only).
             String track = trimToNull(cfg.getString("track"));
-            if (track != null) builder.track(track);
+            if (track != null) {
+                String mc = org.bukkit.Bukkit.getBukkitVersion().split("-")[0];
+                if (!mc.startsWith("1.")) builder.track(track);
+            }
             if (cfg.contains("require-hash")) builder.requireHash(cfg.getBoolean("require-hash", true));
 
             Updater updater = builder.build();
