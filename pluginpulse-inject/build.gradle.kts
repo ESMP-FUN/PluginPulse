@@ -3,7 +3,7 @@
 // final main classes) without its source. Also the boot-testable reference the
 // in-browser JS engine is golden-tested against.
 plugins {
-    id("com.gradleup.shadow") version "8.3.5"
+    id("com.gradleup.shadow") version "9.0.0"
 }
 
 dependencies {

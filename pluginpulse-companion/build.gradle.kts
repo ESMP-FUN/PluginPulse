@@ -2,7 +2,7 @@
 // PluginPulse checks/staging on behalf of other installed plugins listed in its
 // config.yml. Shades and relocates pluginpulse-core so it ships as one drop-in jar.
 plugins {
-    id("com.gradleup.shadow") version "8.3.5"
+    id("com.gradleup.shadow") version "9.0.0"
 }
 
 dependencies {
