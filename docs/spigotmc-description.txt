@@ -1,0 +1,150 @@
+[CENTER][SIZE=6][B]PluginPulse[/B][/SIZE]
+[SIZE=4][COLOR=#7f8c8d]Keep your plugins up to date — the way that suits you[/COLOR][/SIZE]
+[SIZE=3]Paper · Spigot · Folia — 1.20.5–1.21.x and 26.x[/SIZE]
+[SIZE=2][I](banner image goes here)[/I][/SIZE][/CENTER]
+[CENTER][SIZE=4][I]Most servers find out a plugin is outdated the hard way — a crash, a
+security advisory, or a player pointing it out. PluginPulse tells you first, and
+can download, verify and stage the update for you.[/I][/SIZE][/CENTER]
+[CENTER][SIZE=3][COLOR=#808080]
+——————————————————————————————
+[/COLOR][/SIZE][/CENTER]
+[SIZE=6][COLOR=#0000ff][B]Three tools, one project[/B][/COLOR][/SIZE]
+PluginPulse checks where your plugins actually publish releases — Modrinth, GitHub,
+Hangar, or a self-hosted manifest — and keeps them current. Pick the tool that
+matches you:
+[LIST]
+[*][B]Run a server?[/B] Use the [B]companion plugin[/B] (the download on this page) — list your other plugins in a config file and it updates them on their behalf.
+[*][B]Build your own plugin?[/B] Shade in the [B]library[/B] and your plugin self-updates.
+[*][B]Have a jar you can't rebuild?[/B] The [B]browser tool[/B] adds an updater to a compiled jar — in your browser, jar never uploaded.
+[/LIST]
+[CENTER][SIZE=3][COLOR=#808080]
+——————————————————————————————
+[/COLOR][/SIZE][/CENTER]
+[SIZE=6][COLOR=#0000ff][B]The companion plugin[/B][/COLOR][/SIZE]
+Drop it into [I]plugins/[/I], then list your other plugins and where each one gets
+its updates. Those plugins don't need to know anything about it.
+[CODE=yaml]
+# plugins/PluginPulseCompanion/config.yml
+plugins:
+  # Key = the plugin's EXACT name as shown by /plugins
+  EssentialsX:
+    modrinth: essentialsx        # its Modrinth slug
+    mode: notify                 # tell me on join; download nothing
+
+  WorldGuard:
+    github: EngineHub/WorldGuard  # GitHub owner/repo (uses Releases)
+    mode: download                # download + stage; applies on restart
+
+  SomePaidPlugin:
+    hangar: Author/My-Plugin      # Hangar project slug
+    mode: check-only              # silent; only shown in /pluginpulse
+
+user-agent-contact: "you@example.com"   # required by Modrinth's API rules
+check-interval-hours: 6
+[/CODE]
+Edit, then [I]/pluginpulse reload[/I]. That's the whole setup.
+[CENTER][SIZE=3][COLOR=#808080]
+——————————————————————————————
+[/COLOR][/SIZE][/CENTER]
+[SIZE=6][COLOR=#0000ff][B]Update sources[/B][/COLOR][/SIZE]
+Point each plugin at wherever [I]it[/I] publishes releases:
+[LIST]
+[*][B]Modrinth[/B] — project slug
+[*][B]GitHub Releases[/B] — owner/repo
+[*][B]Hangar[/B] — project slug
+[*][B]Custom JSON manifest[/B] — a self-hosted URL (headers can carry auth, e.g. licence keys)
+[/LIST]
+List more than one as fallbacks, and [B]choose the check order[/B] — a priority
+setting (a #1/#2/#3 dropdown in the browser tool; a [I]source-order[/I] list in YAML)
+decides which is tried first.
+[CENTER][SIZE=3][COLOR=#808080]
+——————————————————————————————
+[/COLOR][/SIZE][/CENTER]
+[SIZE=6][COLOR=#0000ff][B]Update modes — you're always in control[/B][/COLOR][/SIZE]
+[LIST]
+[*][B]off[/B] — ignore this plugin
+[*][B]check-only[/B] — check quietly; result only in [I]/pluginpulse[/I]
+[*][B]notify[/B] (default) — check + tell admins (console & on join). [B]Nothing is downloaded.[/B]
+[*][B]download[/B] — check, download, checksum-verify, and [B]stage[/B] for the next restart
+[*][B]auto-stage[/B] — like download, but staged automatically as soon as it's found
+[/LIST]
+[CENTER][SIZE=3][COLOR=#808080]
+——————————————————————————————
+[/COLOR][/SIZE][/CENTER]
+[SIZE=6][COLOR=#0000ff][B]Safe by design[/B][/COLOR][/SIZE]
+Nothing is ever swapped under a running server.
+[LIST]
+[*]Downloads are [B]checksum-verified[/B] (sha512 → sha256 → sha1); unsigned downloads are refused unless you opt in.
+[*]The current jar is [B]backed up[/B] before anything changes.
+[*]The new jar is [B]staged[/B] into the server's update folder and applies on your next restart.
+[*][I]/pluginpulse restore[/I] stages the previous backup to roll a bad update back.
+[/LIST]
+[CENTER][SIZE=3][COLOR=#808080]
+——————————————————————————————
+[/COLOR][/SIZE][/CENTER]
+[SIZE=6][COLOR=#0000ff][B]Compatibility[/B][/COLOR][/SIZE]
+[LIST]
+[*][B]Server software:[/B] Paper, Spigot, Folia, and Paper-compatible forks (Purpur, Pufferfish, etc.)
+[*][B]Minecraft:[/B] 1.20.5–1.21.x (plain jar) · 26.x (the [I]-mc26[/I] jar)
+[*][B]Java:[/B] 21+ for 1.20.5–1.21.x · 25+ for 26.x
+[*][B]Dependencies:[/B] none — nothing to install alongside it
+[/LIST]
+On Spigot (no Adventure), rich clickable notices automatically fall back to plain
+text with the download link spelled out — everything else works identically. Folia
+is detected at runtime and scheduler calls are routed to the regional schedulers.
+[CENTER][SIZE=3][COLOR=#808080]
+——————————————————————————————
+[/COLOR][/SIZE][/CENTER]
+[SIZE=6][COLOR=#0000ff][B]Installation[/B][/COLOR][/SIZE]
+[LIST=1]
+[*]Download the jar that matches your server: the plain jar for 1.20.5–1.21.x, the [I]-mc26[/I] jar for 26.x
+[*]Drop it into [I]plugins/[/I]
+[*]Start the server — it generates [I]config.yml[/I]
+[*]List your plugins in [I]config.yml[/I], then [I]/pluginpulse reload[/I]
+[/LIST]
+[CENTER][SIZE=3][COLOR=#808080]
+——————————————————————————————
+[/COLOR][/SIZE][/CENTER]
+[SIZE=6][COLOR=#0000ff][B]Commands[/B][/COLOR][/SIZE]
+All commands live under [I]/pluginpulse[/I] (aliases: [I]/ppc[/I], [I]/pulse[/I]).
+Permission [I]pluginpulse.admin[/I] (ops have it by default).
+[LIST]
+[*][I]/pluginpulse[/I] or [I]list[/I] — show each managed plugin and whether an update is available
+[*][I]/pluginpulse check [plugin|all][/I] — check now
+[*][I]/pluginpulse download [plugin|all][/I] — download + stage available updates
+[*][I]/pluginpulse restore [plugin|all][/I] — stage the previous backup (undo a bad update)
+[*][I]/pluginpulse reload[/I] — re-read config.yml
+[/LIST]
+[CENTER][SIZE=3][COLOR=#808080]
+——————————————————————————————
+[/COLOR][/SIZE][/CENTER]
+[SIZE=6][COLOR=#0000ff][B]For plugin developers[/B][/COLOR][/SIZE]
+Want your [I]own[/I] plugin to self-update? Shade the library in via JitPack and
+relocate it — then it's either [B]one file[/B] (a [I]pluginpulse.yml[/I] plus
+[I]PluginPulse.bootstrap(this)[/I]) or a full [B]builder[/B] for custom sources,
+message re-branding and distribution tracks. MiniMessage notices, semver-ish
+comparison with pre-release awareness, tracks for parallel builds (e.g.
+[I]1.7.3[/I] and [I]1.7.3-mc26[/I]), and verified one-command installs with
+rollback — all dependency-free. See the library guide on GitHub.
+[CENTER][SIZE=3][COLOR=#808080]
+——————————————————————————————
+[/COLOR][/SIZE][/CENTER]
+[SIZE=6][COLOR=#0000ff][B]Free and open source[/B][/COLOR][/SIZE]
+[LIST]
+[*]No licence key
+[*]No telemetry
+[*]No "premium" feature gating
+[*]MIT-licensed — full source on GitHub, issues and PRs welcome
+[/LIST]
+[CENTER][SIZE=3][COLOR=#808080]
+——————————————————————————————
+[/COLOR][/SIZE][/CENTER]
+[SIZE=6][COLOR=#0000ff][B]Links[/B][/COLOR][/SIZE]
+[LIST]
+[*][URL=https://github.com/darkstarworks/PluginPulse]Source code and issue tracker[/URL]
+[*][URL=https://github.com/darkstarworks/PluginPulse/blob/master/docs/companion.md]Companion plugin guide (server owners)[/URL]
+[*][URL=https://github.com/darkstarworks/PluginPulse/blob/master/docs/adopt-library.md]Library guide (developers)[/URL]
+[*][URL=https://github.com/darkstarworks/PluginPulse/blob/master/docs/web-tool.md]Browser tool guide[/URL]
+[/LIST]
+[CENTER][SIZE=3][I]If PluginPulse saved you from a missed update, a positive review on this
+page is the best way to support development.[/I][/SIZE][/CENTER]
