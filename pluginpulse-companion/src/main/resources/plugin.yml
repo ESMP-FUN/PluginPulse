@@ -1,7 +1,7 @@
 name: PluginPulseCompanion
 version: '${version}'
 main: io.github.darkstarworks.ppcompanion.CompanionPlugin
-api-version: '1.20'
+api-version: '${apiVersion}'
 author: darkstarworks
 description: Keeps your other installed plugins up to date, driven by PluginPulse.
 website: https://github.com/darkstarworks/PluginPulse
