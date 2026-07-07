@@ -211,7 +211,7 @@
       const out = await window.PPInjector.injectJar(await fileBytes(), opts, a);
       const base = selectedFile.name.replace(/\.jar$/i, '');
       download(out, base + '-pulse.jar');
-      status('Done — downloaded ' + base + '-pulse.jar.', 'ok');
+      status('Done — you created ' + base + '-pulse.jar.', 'ok');
       toast({ kind: 'ok', title: 'Updated jar downloaded',
         lines: [base + '-pulse.jar is in your downloads.', 'Test it on your own server before sharing it — the tool can\'t confirm the jar boots.'] });
       bumpCounter();
