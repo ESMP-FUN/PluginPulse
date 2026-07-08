@@ -21,6 +21,12 @@ plugins:
   #   mode: download                # download + stage; applies on next restart
   #   track: mc26                   # OPTIONAL: follow a "-mc26" release line
   #
+  # PrivatePlugin:
+  #   github: owner/private-repo    # a PRIVATE repo needs a token to read/download
+  #   github-token: "${GITHUB_TOKEN}"  # env-var reference (recommended), OR a literal
+  #                                    # PAT. Needs read-only Contents scope on the repo.
+  #   mode: auto-stage              # private gifts can't use the notify link — auto-stage
+  #
   # HangarPlugin:
   #   hangar: project-slug          # its Hangar project slug
   #   mode: check-only              # silent: only /pluginpulse shows the result
@@ -28,9 +34,18 @@ plugins:
 # What "mode" means:
 #   off          — ignore this plugin
 #   check-only   — check silently; results shown only via /pluginpulse
-#   notify       — check + tell admins on join and in console (no download)
+#   notify       — check + tell admins on join and in console; the notice has a
+#                  button to download + install in the background, no page visit
 #   download     — check + download + stage; the update applies on next restart
 #   auto-stage   — like download, but staged automatically as soon as it's found
+
+# Optional per-plugin keys:
+#   github-token — for a PRIVATE github repo. A ${ENV_VAR} reference (recommended)
+#                  or a literal PAT with read-only Contents scope on that repo.
+#   hot-reload   — true to install without a restart. Auto-refuses at runtime when
+#                  unsafe (Folia, other plugins depend on it, or it bundles a
+#                  native library such as the SQLite driver) and falls back to a
+#                  restart-install. Default false.
 
 # Contact string sent with API requests. Modrinth's API rules require a way to
 # reach you (an email or a project/website URL).

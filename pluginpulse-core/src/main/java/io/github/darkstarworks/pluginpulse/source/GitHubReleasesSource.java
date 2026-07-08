@@ -42,12 +42,33 @@ public final class GitHubReleasesSource implements UpdateSource {
         this.assetFilter = assetFilter != null ? assetFilter : DEFAULT_ASSET_FILTER;
     }
 
+    private boolean hasToken() {
+        return token != null && !token.isBlank();
+    }
+
+    /**
+     * Headers the download step reuses. For a private repo the artifact can't be
+     * fetched anonymously, so a token yields a Bearer header plus the
+     * {@code application/octet-stream} Accept that GitHub's asset API requires to
+     * hand back the binary (it 302-redirects to a signed, no-auth URL, and the
+     * HTTP client drops the Authorization header on that cross-host hop). Public
+     * repos need nothing here.
+     */
+    @Override
+    public Map<String, String> downloadHeaders() {
+        if (!hasToken()) return Map.of();
+        return Map.of(
+                "Authorization", "Bearer " + token,
+                "Accept", "application/octet-stream",
+                "X-GitHub-Api-Version", "2022-11-28");
+    }
+
     @Override
     public UpdateInfo fetchLatest(SourceContext ctx) throws Exception {
         Map<String, String> headers = new HashMap<>();
         headers.put("Accept", "application/vnd.github+json");
         headers.put("X-GitHub-Api-Version", "2022-11-28");
-        if (token != null && !token.isBlank()) {
+        if (hasToken()) {
             headers.put("Authorization", "Bearer " + token);
         }
         String json = ctx.http().get("https://api.github.com/repos/" + repo + "/releases?per_page=15", headers);
@@ -55,22 +76,30 @@ public final class GitHubReleasesSource implements UpdateSource {
         if (parsed == null) {
             throw new IllegalStateException("GitHub repo " + repo + " has no matching releases");
         }
+        UpdateInfo info = parsed.info;
+        // Private repos: browser_download_url isn't reliably token-authable, but the
+        // asset's API url is (with the octet-stream Accept from downloadHeaders()).
+        // Swap to it only when we hold a token and GitHub gave us that url — public
+        // downloads stay on the plain browser URL.
+        if (hasToken() && parsed.apiAssetUrl != null) {
+            info = withDownloadUrl(info, parsed.apiAssetUrl);
+        }
         // Sidecar checksum fetch requires a second request; only when no digest.
-        if (parsed.info.hashes().isEmpty() && parsed.sha256SidecarUrl != null) {
+        if (info.hashes().isEmpty() && parsed.sha256SidecarUrl != null) {
             try {
                 String body = ctx.http().get(parsed.sha256SidecarUrl, headers).trim();
                 String hex = body.split("\\s+")[0];
                 if (hex.matches("[0-9a-fA-F]{64}")) {
-                    return withHash(parsed.info, "sha256", hex.toLowerCase(Locale.ROOT));
+                    return withHash(info, "sha256", hex.toLowerCase(Locale.ROOT));
                 }
             } catch (Exception e) {
                 ctx.logger().fine("Sidecar checksum fetch failed: " + e.getMessage());
             }
         }
-        return parsed.info;
+        return info;
     }
 
-    record Parsed(UpdateInfo info, String sha256SidecarUrl) {
+    record Parsed(UpdateInfo info, String sha256SidecarUrl, String apiAssetUrl) {
     }
 
     /**
@@ -129,10 +158,16 @@ public final class GitHubReleasesSource implements UpdateSource {
 
         Map<String, String> hashes = new HashMap<>();
         String downloadUrl = null;
+        String apiAssetUrl = null;
         String fileName = null;
         long size = -1;
         if (asset != null) {
             downloadUrl = asset.get("browser_download_url").getAsString();
+            // The asset's API url ("…/releases/assets/<id>") is the authenticated
+            // download path for private repos; may be absent on older payloads.
+            if (asset.has("url") && !asset.get("url").isJsonNull()) {
+                apiAssetUrl = asset.get("url").getAsString();
+            }
             fileName = asset.get("name").getAsString();
             if (asset.has("size")) size = asset.get("size").getAsLong();
             if (asset.has("digest") && !asset.get("digest").isJsonNull()) {
@@ -144,7 +179,7 @@ public final class GitHubReleasesSource implements UpdateSource {
             }
         }
         UpdateInfo info = new UpdateInfo(version, changelog, downloadUrl, fileName, hashes, size, true, pageUrl);
-        return new Parsed(info, sidecarUrl);
+        return new Parsed(info, sidecarUrl, apiAssetUrl);
     }
 
     private static UpdateInfo withHash(UpdateInfo info, String algo, String hex) {
@@ -152,6 +187,11 @@ public final class GitHubReleasesSource implements UpdateSource {
         hashes.put(algo, hex);
         return new UpdateInfo(info.version(), info.changelog(), info.downloadUrl(), info.fileName(),
                 hashes, info.sizeBytes(), info.restartRequired(), info.releasePageUrl());
+    }
+
+    private static UpdateInfo withDownloadUrl(UpdateInfo info, String downloadUrl) {
+        return new UpdateInfo(info.version(), info.changelog(), downloadUrl, info.fileName(),
+                info.hashes(), info.sizeBytes(), info.restartRequired(), info.releasePageUrl());
     }
 
     @Override

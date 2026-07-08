@@ -73,6 +73,9 @@ public final class InjectCli implements Callable<Integer> {
         String modrinth;
         @Option(names = "--github", description = "GitHub owner/repo (uses Releases).")
         String github;
+        @Option(names = "--github-token", description = "Token for a PRIVATE GitHub repo: a literal PAT "
+                + "or a ${ENV_VAR} reference. Needs read-only Contents scope.")
+        String githubToken;
         @Option(names = "--hangar", description = "Hangar project slug.")
         String hangar;
         @Option(names = "--permission", description = "Permission gating notices/commands.")
@@ -89,6 +92,9 @@ public final class InjectCli implements Callable<Integer> {
         Integer checkIntervalHours;
         @Option(names = "--upgrade", description = "Re-inject a jar that already contains PluginPulse.")
         boolean upgrade;
+        @Option(names = "--hot-reload", description = "Enable no-restart installs (needs the hotreload module "
+                + "bundled; refused at runtime when unsafe).")
+        boolean hotReload;
 
         @Override
         public Integer call() throws Exception {
@@ -98,7 +104,7 @@ public final class InjectCli implements Callable<Integer> {
             }
             Path out = output != null ? output : defaultOutput(input);
             InjectOptions options = new InjectOptions(modrinth, github, hangar, permission, commandRoot,
-                    mode, contact, track, checkIntervalHours, upgrade);
+                    mode, contact, track, checkIntervalHours, upgrade, githubToken, hotReload);
             try {
                 Injector.Result result = new Injector().inject(input, out, options);
                 System.out.println("Injected " + result.main() + " via " + result.strategy() + ".");

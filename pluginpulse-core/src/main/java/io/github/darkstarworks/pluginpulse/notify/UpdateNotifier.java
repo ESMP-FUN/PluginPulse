@@ -23,6 +23,9 @@ public final class UpdateNotifier {
     public static final String KEY_CONSOLE = "console";
     public static final String KEY_PLAYER = "player";
     public static final String KEY_BUTTONS = "buttons";
+    public static final String KEY_DOWNLOAD = "download-button";
+    public static final String KEY_STAGED_RELOAD = "staged-reload";
+    public static final String KEY_STAGED_RESTART = "staged-restart";
 
     /** Whether Adventure/MiniMessage is available (Paper yes, Spigot no). */
     private static final boolean ADVENTURE_PRESENT = detectAdventure();
@@ -42,8 +45,19 @@ public final class UpdateNotifier {
                     + "latest version is <green><latest></green>."
                     + "<newline><click:open_url:'<page>'><hover:show_text:'<gray>Open the download page'>"
                     + "<aqua>[Download Latest Version]</aqua></hover></click>",
+            // In-game background download (needs a command root to run the command).
+            KEY_DOWNLOAD, " <click:run_command:'<cmdroot> update download'>"
+                    + "<hover:show_text:'<gray>Download it now, in the background'>"
+                    + "<green>[Download & Install]</green></hover></click>",
             KEY_BUTTONS, " <click:run_command:'<cmdroot> update ignore <latest>'>"
-                    + "<hover:show_text:'<gray>Hide notifications for this version'><gray>[Ignore]</gray></hover></click>"
+                    + "<hover:show_text:'<gray>Hide notifications for this version'><gray>[Ignore]</gray></hover></click>",
+            // Post-download "ready" notices. RELOAD offers a no-restart install;
+            // RESTART is shown when hot reload isn't available/safe.
+            KEY_STAGED_RELOAD, "<prefix> <green>Update <latest> downloaded.</green> "
+                    + "<click:run_command:'<cmdroot> update apply'>"
+                    + "<hover:show_text:'<gray>Apply now — no restart'><aqua>[Install Now]</aqua></hover></click>",
+            KEY_STAGED_RESTART, "<prefix> <green>Update <latest> downloaded and staged.</green> "
+                    + "<gray>Restart the server to apply it.</gray>"
     );
 
     private final String prefix;
@@ -74,10 +88,12 @@ public final class UpdateNotifier {
 
     /** Player/CommandSender notice with clickable download link (+ optional buttons). */
     public void notifySender(CommandSender sender, String current, UpdateInfo info) {
+        boolean hasCmd = commandRoot != null && !commandRoot.isBlank();
         if (ADVENTURE_PRESENT) {
             String template = messages.get(KEY_PLAYER);
-            if (commandRoot != null && !commandRoot.isBlank()) {
-                template += messages.get(KEY_BUTTONS);
+            if (hasCmd) {
+                // Offer both: open the page, OR download it in the background here.
+                template += messages.get(KEY_DOWNLOAD) + messages.get(KEY_BUTTONS);
             }
             AdventureText.send(sender, render(KEY_PLAYER, current, info, template));
         } else {
@@ -86,10 +102,37 @@ public final class UpdateNotifier {
                     .append(" Update available: ").append(info.version())
                     .append(" (current: ").append(current).append(").");
             if (!page.isEmpty()) msg.append(" Download: ").append(page);
-            if (commandRoot != null && !commandRoot.isBlank()) {
+            if (hasCmd) {
                 msg.append("  Run '").append(commandRoot).append(" update download' to install.");
             }
             sender.sendMessage(msg.toString());
+        }
+    }
+
+    /**
+     * Post-download "ready to install" notice. When {@code canReload} (a hot-reload
+     * engine is present, the environment is safe, and a command root exists to run
+     * the command) it offers a no-restart [Install Now]; otherwise it says a restart
+     * is needed.
+     */
+    public void notifyStaged(CommandSender sender, UpdateInfo info, boolean canReload) {
+        boolean offerReload = canReload && commandRoot != null && !commandRoot.isBlank();
+        String key = offerReload ? KEY_STAGED_RELOAD : KEY_STAGED_RESTART;
+        if (ADVENTURE_PRESENT) {
+            AdventureText.send(sender, render(key, "", info));
+        } else {
+            sender.sendMessage(stripTags(render(key, "", info)));
+        }
+    }
+
+    /** Console form of the post-download notice. */
+    public void notifyStagedConsole(String pluginName, UpdateInfo info, boolean canReload) {
+        boolean offerReload = canReload && commandRoot != null && !commandRoot.isBlank();
+        String key = offerReload ? KEY_STAGED_RELOAD : KEY_STAGED_RESTART;
+        if (ADVENTURE_PRESENT) {
+            AdventureText.console(render(key, "", info));
+        } else {
+            Bukkit.getConsoleSender().sendMessage(stripTags(render(key, "", info)));
         }
     }
 

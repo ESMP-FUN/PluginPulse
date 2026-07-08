@@ -21,7 +21,7 @@ class InjectorTest {
 
     private static InjectOptions opts() {
         return new InjectOptions("sample-slug", null, null, "sample.admin", "/sample",
-                "notify", "me@example.com", null, 6, false);
+                "notify", "me@example.com", null, 6, false, null, false);
     }
 
     @Test

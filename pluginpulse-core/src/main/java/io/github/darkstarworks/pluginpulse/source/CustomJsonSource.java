@@ -48,6 +48,11 @@ public final class CustomJsonSource implements UpdateSource {
     }
 
     @Override
+    public Map<String, String> downloadHeaders() {
+        return headers;
+    }
+
+    @Override
     public UpdateInfo fetchLatest(SourceContext ctx) throws Exception {
         String json = ctx.http().get(manifestUrl, headers);
         return parse(json, ctx.track());

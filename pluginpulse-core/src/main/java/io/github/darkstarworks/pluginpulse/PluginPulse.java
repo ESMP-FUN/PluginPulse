@@ -89,8 +89,12 @@ public final class PluginPulse {
             // is appended afterwards, and the historical default is modrinth > github
             // > hangar when no list is given.
             java.util.Map<String, io.github.darkstarworks.pluginpulse.source.UpdateSource> available = new java.util.LinkedHashMap<>();
+            // Optional token for a PRIVATE GitHub repo — supplied literally or as
+            // a ${ENV_VAR} reference (see Secrets). Authenticates both the version
+            // check and the download; null/absent keeps the anonymous public path.
+            String githubToken = Secrets.resolve(cfg.getString("github-token"));
             if (modrinth != null) available.put("modrinth", new ModrinthSource(modrinth));
-            if (github != null) available.put("github", new GitHubReleasesSource(github));
+            if (github != null) available.put("github", new GitHubReleasesSource(github, githubToken, null));
             if (hangar != null) available.put("hangar", new HangarSource(hangar));
 
             java.util.List<String> ordered = new java.util.ArrayList<>();
@@ -131,6 +135,14 @@ public final class PluginPulse {
             }
             if (cfg.contains("require-hash")) builder.requireHash(cfg.getBoolean("require-hash", true));
 
+            // Opt-in no-restart installs. Requires the pluginpulse-hotreload module
+            // to be on the classpath; the engine itself still refuses at runtime
+            // when a reload would be unsafe (Folia, dependents, bundled native lib).
+            if (cfg.getBoolean("hot-reload", false)) {
+                ReloadEngine engine = loadHotReloadEngine(plugin);
+                if (engine != null) builder.reloadEngine(engine);
+            }
+
             Updater updater = builder.build();
             updater.start();
             UPDATERS.put(plugin.getName(), updater);
@@ -167,6 +179,16 @@ public final class PluginPulse {
         Updater updater = UPDATERS.remove(plugin.getName());
         SUBCOMMANDS.remove(plugin.getName());
         if (updater != null) updater.shutdown();
+    }
+
+    /** Load the optional hot-reload engine, logging when the module isn't bundled. */
+    private static ReloadEngine loadHotReloadEngine(JavaPlugin plugin) {
+        ReloadEngine engine = ReloadEngines.tryLoad();
+        if (engine == null) {
+            plugin.getLogger().warning("PluginPulse: hot-reload is enabled but the pluginpulse-hotreload "
+                    + "module isn't bundled — updates will stage for a restart instead.");
+        }
+        return engine;
     }
 
     private static boolean addSource(Updater.Builder builder, io.github.darkstarworks.pluginpulse.source.UpdateSource source, boolean primarySet) {

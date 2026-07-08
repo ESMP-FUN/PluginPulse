@@ -14,7 +14,9 @@ public record InjectOptions(
         String userAgentContact,
         String track,
         Integer checkIntervalHours,
-        boolean upgrade) {
+        boolean upgrade,
+        String githubToken,
+        boolean hotReload) {
 
     boolean hasSource() {
         return notBlank(modrinth) || notBlank(github) || notBlank(hangar);

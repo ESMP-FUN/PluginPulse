@@ -81,8 +81,11 @@ public final class CompanionPlugin extends JavaPlugin {
         String modrinth = trimToNull(entry.getString("modrinth"));
         String github = trimToNull(entry.getString("github"));
         String hangar = trimToNull(entry.getString("hangar"));
+        // Optional token for a PRIVATE GitHub repo (literal or ${ENV_VAR}); it
+        // authenticates the check and the download alike.
+        String githubToken = io.github.darkstarworks.pluginpulse.Secrets.resolve(entry.getString("github-token"));
         if (modrinth != null) sources.add(new ModrinthSource(modrinth));
-        if (github != null) sources.add(new GitHubReleasesSource(github));
+        if (github != null) sources.add(new GitHubReleasesSource(github, githubToken, null));
         if (hangar != null) sources.add(new HangarSource(hangar));
         if (sources.isEmpty()) {
             skipped.put(name, "no modrinth/github/hangar source configured");
@@ -113,6 +116,13 @@ public final class CompanionPlugin extends JavaPlugin {
             if (track != null) builder.track(track);
             if (entry.contains("require-hash")) {
                 builder.requireHash(entry.getBoolean("require-hash", true));
+            }
+            // Opt-in no-restart installs for this target. The engine still refuses
+            // at runtime when unsafe (Folia, dependents, a bundled native library).
+            if (entry.getBoolean("hot-reload", false)) {
+                io.github.darkstarworks.pluginpulse.ReloadEngine engine =
+                        io.github.darkstarworks.pluginpulse.ReloadEngines.tryLoad();
+                if (engine != null) builder.reloadEngine(engine);
             }
 
             Updater updater = builder.build();

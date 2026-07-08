@@ -6,7 +6,6 @@ import io.github.darkstarworks.pluginpulse.download.PluginJarLocator;
 import io.github.darkstarworks.pluginpulse.notify.JoinNotifyListener;
 import io.github.darkstarworks.pluginpulse.notify.UpdateNotifier;
 import io.github.darkstarworks.pluginpulse.platform.SchedulerAdapter;
-import io.github.darkstarworks.pluginpulse.source.CustomJsonSource;
 import io.github.darkstarworks.pluginpulse.source.HttpSupport;
 import io.github.darkstarworks.pluginpulse.source.SourceContext;
 import io.github.darkstarworks.pluginpulse.source.UpdateSource;
@@ -186,7 +185,10 @@ public final class Updater {
      * {@code sender}. Requires a prior check to have found an update.
      */
     public void downloadAndStage(CommandSender sender) {
-        if (!mode.atLeast(UpdateMode.DOWNLOAD)) {
+        // An explicit, admin-initiated download is allowed from NOTIFY up: notify
+        // mode offers a "download in the background" button, and clicking it is a
+        // clear opt-in. Only silent CHECK_ONLY (and off) refuse.
+        if (!mode.atLeast(UpdateMode.NOTIFY)) {
             sender.sendMessage(plugin.getName() + ": downloads are disabled (mode " + mode + ").");
             return;
         }
@@ -197,14 +199,40 @@ public final class Updater {
         }
         if (info.version().equalsIgnoreCase(stagedVersion)) {
             sender.sendMessage(plugin.getName() + ": " + info.version()
-                    + " is already staged — restart the server to apply it.");
+                    + " is already staged — " + applyHint() + ".");
             return;
         }
-        sender.sendMessage(plugin.getName() + ": downloading " + info.version() + "...");
+        sender.sendMessage(plugin.getName() + ": downloading " + info.version() + " in the background...");
         scheduler.runAsync(() -> {
             String message = stage(info);
-            scheduler.runGlobal(() -> sender.sendMessage(plugin.getName() + ": " + message));
+            scheduler.runGlobal(() -> {
+                sender.sendMessage(plugin.getName() + ": " + message);
+                // Follow-up "ready to install" notice to every admin (not just the
+                // clicker), telling them whether it hot-reloads or needs a restart.
+                if (info.version().equalsIgnoreCase(stagedVersion)) announceStaged(info);
+            });
         });
+    }
+
+    /** Whether the staged update can be applied right now without a restart. */
+    boolean canHotReloadNow() {
+        return reloadEngine != null && reloadEngine.refusalReason(plugin) == null;
+    }
+
+    /** "click [Install Now]" vs "restart the server to apply", per hot-reload availability. */
+    private String applyHint() {
+        return canHotReloadNow()
+                ? "apply it now with " + (commandRoot != null ? commandRoot + " update apply" : "the update apply command")
+                : "restart the server to apply it";
+    }
+
+    /** Broadcast the post-download "ready" notice to console + permitted admins. */
+    private void announceStaged(UpdateInfo info) {
+        boolean canReload = canHotReloadNow();
+        notifier.notifyStagedConsole(plugin.getName(), info, canReload);
+        scheduler.runGlobal(() -> Bukkit.getOnlinePlayers().stream()
+                .filter(p -> p.hasPermission(permission))
+                .forEach(p -> scheduler.runAtEntity(p, () -> notifier.notifyStaged(p, info, canReload))));
     }
 
     /** Stage the given update. Returns a human-readable outcome line. */
@@ -217,11 +245,8 @@ public final class Updater {
             pendingStore.save(new PendingUpdateStore.Pending(
                     info.version(), result.backupFile().toString(), 0));
             stagedVersion = info.version();
-            String note = info.restartRequired()
-                    ? "restart the server to apply it."
-                    : "it will apply on the next restart.";
             plugin.getLogger().info("Staged update " + info.version() + " -> " + result.stagedFile());
-            return "staged " + info.version() + " — " + note;
+            return "staged " + info.version() + " — " + applyHint() + ".";
         } catch (Exception e) {
             plugin.getLogger().log(Level.WARNING, "Update staging failed", e);
             return "update failed: " + e.getMessage();
@@ -320,17 +345,28 @@ public final class Updater {
         UpdateCheckResult result = doCheck();
         lastResult = result;
         if (result.status() == UpdateCheckResult.Status.UPDATE_AVAILABLE) {
-            pendingUpdate = result.info();
-            if (mode == UpdateMode.AUTO_STAGE && !result.info().version().equalsIgnoreCase(stagedVersion)) {
-                plugin.getLogger().info("Auto-staging update " + result.info().version() + "...");
-                plugin.getLogger().info(stage(result.info()));
-            }
-            if (notify && mode.atLeast(UpdateMode.NOTIFY)) {
-                notifier.notifyConsole(plugin.getName(), currentVersion, result.info());
+            UpdateInfo info = result.info();
+            pendingUpdate = info;
+            if (mode == UpdateMode.AUTO_STAGE) {
+                // Auto-stage owns its own messaging (and, when safe, the install),
+                // so it replaces the generic "update available" notice.
+                if (!info.version().equalsIgnoreCase(stagedVersion)) {
+                    plugin.getLogger().info("Auto-staging update " + info.version() + "...");
+                    plugin.getLogger().info(stage(info));
+                    if (info.version().equalsIgnoreCase(stagedVersion)) {
+                        if (canHotReloadNow()) {
+                            applyNow(Bukkit.getConsoleSender()); // true hands-off — no restart
+                        } else {
+                            announceStaged(info);                // staged; restart to apply
+                        }
+                    }
+                }
+            } else if (notify && mode.atLeast(UpdateMode.NOTIFY)) {
+                notifier.notifyConsole(plugin.getName(), currentVersion, info);
                 scheduler.runGlobal(() -> Bukkit.getOnlinePlayers().stream()
                         .filter(p -> p.hasPermission(permission))
                         .forEach(p -> scheduler.runAtEntity(p, () ->
-                                notifier.notifySender(p, currentVersion, result.info()))));
+                                notifier.notifySender(p, currentVersion, info))));
             }
         } else {
             pendingUpdate = null;
@@ -344,8 +380,9 @@ public final class Updater {
         for (UpdateSource source : sources) {
             try {
                 UpdateInfo info = source.fetchLatest(ctx);
-                // Authenticated sources carry their headers over to the download.
-                downloadHeaders = source instanceof CustomJsonSource custom ? custom.headers() : Map.of();
+                // Authenticated sources carry their headers over to the download
+                // (a private GitHub repo's Bearer token, a store's licence key, …).
+                downloadHeaders = source.downloadHeaders();
                 state.recordCheck(info.version());
                 Version latest = Version.parse(info.version(), track);
                 Version current = Version.parse(currentVersion, track);

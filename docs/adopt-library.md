@@ -161,7 +161,20 @@ mode: notify                      # off | check-only | notify | download | auto-
 check-interval-hours: 6
 # track: mc26                     # optional: follow a "-<track>" release line
 # self-register-command: true     # default true
+# github-token: "${GITHUB_TOKEN}" # PRIVATE repo: ${ENV_VAR} ref (recommended) or a
+#                                 # literal PAT with read-only Contents scope. Used
+#                                 # for BOTH the check and the download.
+# hot-reload: false               # true = install without a restart (needs the
+#                                 # pluginpulse-hotreload artifact bundled). Auto-
+#                                 # refuses when unsafe (Folia, dependents, a bundled
+#                                 # native library) and stages for a restart instead.
 ```
+
+In `notify` mode the update notice now carries a **[Download & Install]** button
+that fetches and stages the jar in the background (no page visit), and a follow-up
+tells the admin whether it can be applied now (**[Install Now]**, when hot-reload is
+enabled and safe) or needs a restart. `auto-stage` does that download automatically,
+and — with `hot-reload: true` on a safe server — applies it with no restart at all.
 
 Then, in your plugin's main class:
 

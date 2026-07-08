@@ -26,18 +26,22 @@ server.** There's nothing to install and no account.
    | Field | What to enter | Where to find it |
    |---|---|---|
    | Modrinth / GitHub / Hangar | at least one update source | [finding your update source](update-sources.md) |
+   | GitHub token | *(optional)* only for a **private** GitHub repo — a `${ENV_VAR}` reference or a read-only Contents-scope PAT | your repo's settings |
    | Update mode | how it should behave (see below) | your choice |
    | Command root | *(optional)* e.g. `/myplugin` — a command to manage updates | your choice |
    | Permission | *(optional)* who sees notices, e.g. `myplugin.admin` | your choice |
    | Contact | *(recommended)* email or URL | required by Modrinth's API |
    | Release track | *(optional)* e.g. `mc26` | only if the plugin ships parallel builds |
    | Check interval | *(optional)* hours between checks | default is fine |
+   | Hot-reload | *(optional)* install without a restart; auto-refuses when unsafe | leave off if unsure |
 
    **`mode` for beginners:**
-   - `notify` — just tells admins when an update exists (safest; nothing downloads).
+   - `notify` — tells admins when an update exists; the notice has a **[Download &
+     Install]** button so they can pull it in the background without visiting a page.
    - `check-only` — silent; the result shows only via the command.
    - `download` — downloads and stages the update; it applies when you restart.
-   - `auto-stage` — downloads automatically as soon as an update appears.
+   - `auto-stage` — downloads automatically as soon as an update appears (and, with
+     hot-reload on a safe server, applies it with no restart).
 
 4. **Tick the rights checkbox** — confirm you're allowed to modify and
    redistribute this jar. (You're altering someone's compiled software; only do

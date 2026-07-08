@@ -7,6 +7,9 @@ plugins {
 
 dependencies {
     implementation(project(":pluginpulse-core"))
+    // Bundled so the companion can offer no-restart installs (hot-reload: true)
+    // for the plugins it manages. Relocated with core under ppcompanion.pulse.
+    implementation(project(":pluginpulse-hotreload"))
 }
 
 // Its own root package is io.github.darkstarworks.ppcompanion, so relocating the
