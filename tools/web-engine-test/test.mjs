@@ -98,6 +98,19 @@ async function main() {
   ok(CP.parseClass(cleared).entries.length === forced.entries.length,
     'definalize leaves the constant pool unchanged');
 
+  // Jenkins source: yaml carries the job URL, artifact regex, and — because
+  // Jenkins publishes no checksums — require-hash: false in download mode.
+  const jJar = await buildSampleJar('com.example.demo.DemoPlugin');
+  const jOut = await PPI.injectJar(jJar, {
+    jenkins: 'https://ci.athion.net/job/FastAsyncWorldEdit/', jenkinsArtifact: 'Paper',
+    mode: 'download', contact: 'me@example.com',
+  }, assets);
+  const jYml = await (await JSZip.loadAsync(jOut)).file('pluginpulse.yml').async('string');
+  ok(jYml.includes('jenkins: https://ci.athion.net/job/FastAsyncWorldEdit/'), 'pluginpulse.yml carries jenkins job URL');
+  ok(jYml.includes('jenkins-artifact: "Paper"'), 'pluginpulse.yml carries jenkins-artifact regex');
+  ok(jYml.includes('require-hash: false'), 'download mode with Jenkins emits require-hash: false');
+  ok(!pulseYml.includes('require-hash'), 'non-Jenkins config does not touch require-hash');
+
   console.log(failures === 0 ? '\nALL PASSED' : '\n' + failures + ' FAILED');
   process.exit(failures === 0 ? 0 : 1);
 }

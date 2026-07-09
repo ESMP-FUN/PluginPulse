@@ -93,17 +93,20 @@
 
   function readOptions() {
     // Order the filled-in sources by their chosen priority (#1 first). Ties fall
-    // back to the on-screen order (modrinth, github, hangar).
+    // back to the on-screen order (modrinth, github, hangar, jenkins).
     const prio = (id) => parseInt($(id + '-priority').value, 10) || 9;
     const sourceOrder = [
       { k: 'modrinth', v: $('modrinth').value.trim(), p: prio('modrinth'), d: 0 },
       { k: 'github', v: $('github').value.trim(), p: prio('github'), d: 1 },
       { k: 'hangar', v: $('hangar').value.trim(), p: prio('hangar'), d: 2 },
+      { k: 'jenkins', v: $('jenkins').value.trim(), p: prio('jenkins'), d: 3 },
     ].filter((s) => s.v).sort((a, b) => a.p - b.p || a.d - b.d).map((s) => s.k);
     return {
       modrinth: $('modrinth').value.trim(),
       github: $('github').value.trim(),
       hangar: $('hangar').value.trim(),
+      jenkins: $('jenkins').value.trim(),
+      jenkinsArtifact: $('jenkinsArtifact').value.trim(),
       sourceOrder: sourceOrder,
       permission: $('permission').value.trim(),
       commandRoot: $('commandRoot').value.trim(),
@@ -200,9 +203,14 @@
       return;
     }
     const opts = readOptions();
-    if (!opts.modrinth && !opts.github && !opts.hangar) {
+    if (!opts.modrinth && !opts.github && !opts.hangar && !opts.jenkins) {
       toast({ kind: 'err', title: 'No update source given',
-        lines: ['Fill in at least one of Modrinth, GitHub, or Hangar in step 2 so the plugin knows where to look.'] });
+        lines: ['Fill in at least one of Modrinth, GitHub, Hangar, or Jenkins in step 2 so the plugin knows where to look.'] });
+      return;
+    }
+    if (opts.jenkins && !/^https?:\/\//i.test(opts.jenkins)) {
+      toast({ kind: 'err', title: 'Jenkins URL looks wrong',
+        lines: ['Use the full job page URL, starting with https:// — e.g. https://ci.athion.net/job/FastAsyncWorldEdit/'] });
       return;
     }
     try {
@@ -222,11 +230,11 @@
     }
   }
 
-  // Keep the three priority dropdowns a distinct 1/2/3 permutation: picking a
+  // Keep the four priority dropdowns a distinct 1–4 permutation: picking a
   // number another source already holds swaps that source onto the old value,
   // so two sources can never share a priority.
   function setupPriorities() {
-    const selects = ['modrinth-priority', 'github-priority', 'hangar-priority'].map($);
+    const selects = ['modrinth-priority', 'github-priority', 'hangar-priority', 'jenkins-priority'].map($);
     const prev = new Map(selects.map((s) => [s, s.value]));
     selects.forEach((sel) => {
       sel.addEventListener('change', () => {

@@ -48,7 +48,7 @@
         <div class="source-input">
           <input id="modrinth" type="text" placeholder="viaversion">
           <select id="modrinth-priority" class="prio" aria-label="Modrinth priority">
-            <option value="1" selected>#1</option><option value="2">#2</option><option value="3">#3</option>
+            <option value="1" selected>#1</option><option value="2">#2</option><option value="3">#3</option><option value="4">#4</option>
           </select>
         </div>
       </div>
@@ -61,7 +61,7 @@
         <div class="source-input">
           <input id="github" type="text" placeholder="ViaVersion/ViaVersion">
           <select id="github-priority" class="prio" aria-label="GitHub priority">
-            <option value="1">#1</option><option value="2" selected>#2</option><option value="3">#3</option>
+            <option value="1">#1</option><option value="2" selected>#2</option><option value="3">#3</option><option value="4">#4</option>
           </select>
         </div>
       </div>
@@ -74,9 +74,29 @@
         <div class="source-input">
           <input id="hangar" type="text" placeholder="ViaVersion">
           <select id="hangar-priority" class="prio" aria-label="Hangar priority">
-            <option value="1">#1</option><option value="2">#2</option><option value="3" selected>#3</option>
+            <option value="1">#1</option><option value="2">#2</option><option value="3" selected>#3</option><option value="4">#4</option>
           </select>
         </div>
+      </div>
+
+      <div class="source">
+        <div class="source-head">
+          <span class="source-name">Jenkins (CI snapshots)</span>
+          <span class="source-url">job page URL, e.g. <span class="slug">ci.athion.net/job/FastAsyncWorldEdit/</span></span>
+        </div>
+        <div class="source-input">
+          <input id="jenkins" type="text" placeholder="https://ci.athion.net/job/FastAsyncWorldEdit/">
+          <select id="jenkins-priority" class="prio" aria-label="Jenkins priority">
+            <option value="1">#1</option><option value="2">#2</option><option value="3">#3</option><option value="4" selected>#4</option>
+          </select>
+        </div>
+        <div class="source-input">
+          <input id="jenkinsArtifact" type="text"
+            placeholder="artifact filter (optional) — regex on the jar name, e.g. Paper">
+        </div>
+        <p class="hint">Follows the job's last successful build — these are dev snapshots, not releases.
+          Jenkins publishes no checksums, so with <strong>download</strong> or <strong>auto-stage</strong> mode the
+          tool writes <code>require-hash: false</code> for you; otherwise CI updates would be notify-only.</p>
       </div>
     </li>
 

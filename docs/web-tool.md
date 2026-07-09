@@ -25,7 +25,8 @@ server.** There's nothing to install and no account.
 
    | Field | What to enter | Where to find it |
    |---|---|---|
-   | Modrinth / GitHub / Hangar | at least one update source | [finding your update source](update-sources.md) |
+   | Modrinth / GitHub / Hangar / Jenkins | at least one update source | [finding your update source](update-sources.md) |
+   | Jenkins artifact filter | *(optional)* case-insensitive regex picking one jar when a build archives several, e.g. `Paper` | the job's build artifact list |
    | GitHub token | *(optional)* only for a **private** GitHub repo — a `${ENV_VAR}` reference or a read-only Contents-scope PAT | your repo's settings |
    | Update mode | how it should behave (see below) | your choice |
    | Command root | *(optional)* e.g. `/myplugin` — a command to manage updates | your choice |
@@ -42,6 +43,11 @@ server.** There's nothing to install and no account.
    - `download` — downloads and stages the update; it applies when you restart.
    - `auto-stage` — downloads automatically as soon as an update appears (and, with
      hot-reload on a safe server, applies it with no restart).
+
+   **Jenkins note:** CI builds are dev snapshots and Jenkins publishes no
+   checksums. If you pick `download` or `auto-stage` with a Jenkins source, the
+   tool writes `require-hash: false` into the generated config so staging accepts
+   the unverified artifact — otherwise CI updates would be notify-only.
 
 4. **Tick the rights checkbox** — confirm you're allowed to modify and
    redistribute this jar. (You're altering someone's compiled software; only do

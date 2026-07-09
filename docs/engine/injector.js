@@ -7,8 +7,8 @@
  * instead instruments final mains in place; either produces a working updater.)
  *
  * injectJar(jarBytes, opts, assets) -> Promise<Uint8Array>
- *   opts   : { modrinth, github, hangar, permission, commandRoot, mode, contact,
- *              track, checkIntervalHours, upgrade }
+ *   opts   : { modrinth, github, hangar, jenkins, jenkinsArtifact, permission,
+ *              commandRoot, mode, contact, track, checkIntervalHours, upgrade }
  *   assets : { coreJar: Uint8Array, wrapperTemplate: Uint8Array }
  *
  * Requires JSZip (global) and PPClass (constant-pool.js).
@@ -56,6 +56,15 @@
     if (o.modrinth) lines.push('modrinth: ' + o.modrinth);
     if (o.github) lines.push('github: ' + o.github);
     if (o.hangar) lines.push('hangar: ' + o.hangar);
+    if (o.jenkins) {
+      lines.push('jenkins: ' + o.jenkins);
+      if (o.jenkinsArtifact) lines.push('jenkins-artifact: "' + o.jenkinsArtifact.replace(/"/g, '\\"') + '"');
+      if (o.mode === 'download' || o.mode === 'auto-stage') {
+        // Jenkins publishes no checksums; without this, staging would refuse
+        // every CI artifact and the plugin would fall back to notify-only.
+        lines.push('require-hash: false');
+      }
+    }
     // Explicit check order (primary first). Only meaningful with 2+ sources.
     if (o.sourceOrder && o.sourceOrder.length > 1) {
       lines.push('source-order: [' + o.sourceOrder.join(', ') + ']');
@@ -134,8 +143,8 @@
 
     const desc = await readDescriptor(zip);
     if (!desc) throw new Error('No plugin.yml or paper-plugin.yml with a main: entry.');
-    if (!opts.modrinth && !opts.github && !opts.hangar) {
-      throw new Error('Provide at least one update source (Modrinth, GitHub, or Hangar).');
+    if (!opts.modrinth && !opts.github && !opts.hangar && !opts.jenkins) {
+      throw new Error('Provide at least one update source (Modrinth, GitHub, Hangar, or Jenkins).');
     }
     if (hasPluginPulse(zip) && !opts.upgrade) {
       throw new Error('This jar already contains PluginPulse. Enable "re-inject" to proceed.');
