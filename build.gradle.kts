@@ -10,8 +10,8 @@ plugins {
 // compatibility; the newer JDK is only needed to read the Paper 26 API stubs
 // (class version 69) at compile time. The plugin.yml api-version is switched per
 // variant in pluginpulse-companion (26.1 vs 1.20).
-//   ./gradlew :pluginpulse-companion:shadowJar                 -> ...-0.6.0.jar
-//   ./gradlew :pluginpulse-companion:shadowJar -PmcVariant=26  -> ...-0.6.0-mc26.jar
+//   ./gradlew :pluginpulse-companion:shadowJar                 -> ...-<version>.jar
+//   ./gradlew :pluginpulse-companion:shadowJar -PmcVariant=26  -> ...-<version>-mc26.jar
 val mcVariant: String = (findProperty("mcVariant") as String? ?: "1.21")
 val isMc26: Boolean = mcVariant == "26"
 val paperApiVersion: String = if (isMc26) "26.1.2.build.+" else "1.21.1-R0.1-SNAPSHOT"
