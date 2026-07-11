@@ -19,7 +19,7 @@ the next time you restart. Safe by default.
 ## 1. Download
 
 Get **`PluginPulseCompanion-<version>.jar`** from the
-[Releases page](https://github.com/darkstarworks/PluginPulse/releases).
+[Releases page](https://github.com/ESMP-FUN/PluginPulse/releases).
 
 ## 2. Install
 

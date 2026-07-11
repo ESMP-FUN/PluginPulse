@@ -4,7 +4,7 @@ main: io.github.darkstarworks.ppcompanion.CompanionPlugin
 api-version: '${apiVersion}'
 author: darkstarworks
 description: Keeps your other installed plugins up to date, driven by PluginPulse.
-website: https://github.com/darkstarworks/PluginPulse
+website: https://github.com/ESMP-FUN/PluginPulse
 folia-supported: true
 commands:
   pluginpulse:
