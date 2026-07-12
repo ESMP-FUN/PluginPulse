@@ -11,7 +11,7 @@ The tool adds PluginPulse to an existing plugin jar and hands you a new jar. It
 runs **entirely in your web browser** — **your jar is never uploaded to any
 server.** There's nothing to install and no account.
 
-**Open it:** <https://darkstarworks.github.io/PluginPulse/>
+**Open it:** <https://esmp-fun.github.io/PluginPulse/>
 
 ## Step by step
 
