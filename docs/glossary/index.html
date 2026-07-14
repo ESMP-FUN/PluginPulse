@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Glossary — PluginPulse docs</title>
+  <link rel="stylesheet" href="../docs.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="../">Plugin<span>Pulse</span></a>
+    <p class="brand-sub">Auto-updates for Minecraft plugins</p>
+    <nav>
+      <div class="nav-group">
+        <h2>Guides</h2>
+        <a href="../adopting-the-library/">Adopting the library</a>
+        <a href="../companion-plugin/">Companion plugin</a>
+        <a href="../web-tool/">Web tool</a>
+      </div>
+      <div class="nav-group">
+        <h2>Reference</h2>
+        <a href="../update-sources/">Finding update sources</a>
+        <a href="../glossary/" aria-current="page">Glossary</a>
+      </div>
+      <div class="nav-group">
+        <h2>Links</h2>
+        <a href="../">Open the web tool</a>
+        <a href="https://github.com/ESMP-FUN/PluginPulse">GitHub</a>
+        <a href="https://github.com/ESMP-FUN/PluginPulse/releases">Releases</a>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <h1>Glossary</h1>
+    <p class="lede">Short, plain-English definitions of the terms used across the PluginPulse
+      guides.</p>
+
+    <ul>
+      <li><strong>Paper / Spigot / Folia</strong> — server software that runs Bukkit plugins.
+        Paper is the most common; Spigot is its older sibling; Folia is a multithreaded Paper
+        fork. PluginPulse works on all three.</li>
+      <li><strong>Plugin jar</strong> — the <code>.jar</code> file you drop into a server's
+        <code>plugins/</code> folder. It's a ZIP archive containing compiled code and a
+        descriptor.</li>
+      <li><strong>Descriptor (<code>plugin.yml</code> / <code>paper-plugin.yml</code>)</strong> —
+        a small text file inside a plugin jar that tells the server the plugin's name, version,
+        and <strong>main class</strong> (its entry point).</li>
+      <li><strong>JitPack</strong> — a free service (<a href="https://jitpack.io">jitpack.io</a>)
+        that turns any public GitHub repository tag into a downloadable Gradle/Maven dependency on
+        demand. <strong>You do not need a JitPack account to <em>use</em> a library</strong> — you
+        just add a repository URL to your build file. (A GitHub account only matters if
+        <em>you</em> publish your own project through JitPack later.)</li>
+      <li><strong>Gradle / Maven</strong> — build tools for Java/Kotlin projects. Your build file
+        (<code>build.gradle.kts</code>, <code>build.gradle</code>, or <code>pom.xml</code>) lists
+        dependencies and how to package your plugin.</li>
+      <li><strong>Shading</strong> — bundling a library's classes <em>inside</em> your plugin jar
+        so it ships as one self-contained file (the server won't load the library separately).</li>
+      <li><strong>Relocation</strong> — renaming a shaded library's packages (e.g.
+        <code>io.github.darkstarworks.pluginpulse</code> →
+        <code>my.plugin.libs.pluginpulse</code>) so two plugins that both shade the same library
+        don't collide at runtime. Always relocate shaded libraries.</li>
+      <li><strong>MiniMessage</strong> — Paper's rich-text format for colored, clickable chat
+        messages (<code>&lt;gold&gt;</code>, <code>&lt;click:...&gt;</code>). PluginPulse uses it
+        for update notices; on Spigot it falls back to plain text automatically.</li>
+      <li><strong>Bukkit update folder (<code>plugins/update/</code>)</strong> — a folder the
+        server checks on startup. If it finds a jar there whose filename <strong>exactly
+        matches</strong> a loaded plugin's jar, it swaps the old one for the new one. This is how
+        PluginPulse applies a staged update on the next restart — no live jar swapping by
+        default.</li>
+      <li><strong>Modrinth / Hangar</strong> — plugin hosting sites with public APIs PluginPulse
+        can check for new versions. GitHub Releases works too.</li>
+      <li><strong>Hot reload</strong> — applying an update <em>without</em> restarting the server,
+        by unloading and reloading the plugin in place. Opt-in and used with care; restart-install
+        is the safe default.</li>
+    </ul>
+  </main>
+</div>
+</body>
+</html>

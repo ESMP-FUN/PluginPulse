@@ -145,7 +145,7 @@ console + in-game notices, semver-ish version comparison with pre-release
 awareness, distribution **tracks** for parallel builds (e.g. `1.7.3` and
 `1.7.3-mc26`), rate-limit-friendly checks, and verified one-command installs with
 rollback — all dependency-free. See the
-[library guide](https://github.com/ESMP-FUN/PluginPulse/blob/master/docs/adopt-library.md).
+[library guide](https://esmp-fun.github.io/PluginPulse/adopting-the-library/).
 
 *(Optional `pluginpulse-hotreload` add-on can apply a staged update without a
 restart — with deliberate hard limits: refused on Folia and when other plugins
@@ -156,7 +156,7 @@ depend on yours. Restart-install stays the recommended default.)*
 ## The browser tool — for a jar you can't rebuild
 
 Have a plugin jar but no source and no build tools? The
-[browser tool](https://github.com/ESMP-FUN/PluginPulse/blob/master/docs/web-tool.md)
+[browser tool](https://esmp-fun.github.io/PluginPulse/web-tool/)
 adds an auto-updater to a compiled jar **entirely in your browser** — pick the
 jar, choose where its updates come from, generate a new jar. Your jar is never
 uploaded anywhere; all the work happens locally on the page.
@@ -173,10 +173,10 @@ No licence key, no telemetry, no "premium" gating. MIT-licensed, full source on
 ## Links
 
 - **Source / issues**: [github.com/ESMP-FUN/PluginPulse](https://github.com/ESMP-FUN/PluginPulse)
-- **Server owners — companion guide**: [docs/companion.md](https://github.com/ESMP-FUN/PluginPulse/blob/master/docs/companion.md)
-- **Developers — library guide**: [docs/adopt-library.md](https://github.com/ESMP-FUN/PluginPulse/blob/master/docs/adopt-library.md)
-- **Jar-only — browser tool guide**: [docs/web-tool.md](https://github.com/ESMP-FUN/PluginPulse/blob/master/docs/web-tool.md)
-- **Finding your update source**: [docs/update-sources.md](https://github.com/ESMP-FUN/PluginPulse/blob/master/docs/update-sources.md)
+- **Server owners — companion guide**: [Companion plugin guide](https://esmp-fun.github.io/PluginPulse/companion-plugin/)
+- **Developers — library guide**: [Library guide](https://esmp-fun.github.io/PluginPulse/adopting-the-library/)
+- **Jar-only — browser tool guide**: [Browser tool guide](https://esmp-fun.github.io/PluginPulse/web-tool/)
+- **Finding your update source**: [Finding your update source](https://esmp-fun.github.io/PluginPulse/update-sources/)
 
 <div align="center">
 

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Companion plugin — PluginPulse docs</title>
+  <link rel="stylesheet" href="../docs.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="../">Plugin<span>Pulse</span></a>
+    <p class="brand-sub">Auto-updates for Minecraft plugins</p>
+    <nav>
+      <div class="nav-group">
+        <h2>Guides</h2>
+        <a href="../adopting-the-library/">Adopting the library</a>
+        <a href="../companion-plugin/" aria-current="page">Companion plugin</a>
+        <a href="../web-tool/">Web tool</a>
+      </div>
+      <div class="nav-group">
+        <h2>Reference</h2>
+        <a href="../update-sources/">Finding update sources</a>
+        <a href="../glossary/">Glossary</a>
+      </div>
+      <div class="nav-group">
+        <h2>Links</h2>
+        <a href="../">Open the web tool</a>
+        <a href="https://github.com/ESMP-FUN/PluginPulse">GitHub</a>
+        <a href="https://github.com/ESMP-FUN/PluginPulse/releases">Releases</a>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <h1>Path 2 — The companion plugin (for server owners)</h1>
+    <p class="lede"><strong>Audience:</strong> you run a Minecraft server and want your installed
+      plugins kept up to date. <strong>No code, no building.</strong> You install one plugin and
+      list the others in a config file.</p>
+
+    <p>If a term is unfamiliar, see the <a href="../glossary/">glossary</a>.</p>
+
+    <h2>What it is</h2>
+    <p><strong>PluginPulse Companion</strong> is a normal plugin you drop into
+      <code>plugins/</code>. It reads a list of your <em>other</em> plugins and where each one
+      publishes updates, then checks (and optionally downloads) updates on their behalf — without
+      those plugins needing to know anything about it.</p>
+    <p>It never swaps a running jar live: downloaded updates are <strong>staged</strong> and
+      applied the next time you restart. Safe by default.</p>
+
+    <h2>1. Download</h2>
+    <p>Get <strong><code>PluginPulseCompanion-&lt;version&gt;.jar</code></strong> from the
+      <a href="https://github.com/ESMP-FUN/PluginPulse/releases">Releases page</a>.</p>
+
+    <h2>2. Install</h2>
+    <ol>
+      <li>Stop your server (or have it running — either is fine for the first install).</li>
+      <li>Put the jar in your server's <code>plugins/</code> folder.</li>
+      <li>Start (or restart) the server.</li>
+    </ol>
+    <p>On a successful start you'll see in the console:</p>
+    <pre><code>[PluginPulseCompanion] Enabling PluginPulseCompanion vX.Y.Z
+[PluginPulseCompanion] No plugins configured yet — edit config.yml and run /pluginpulse reload.</code></pre>
+    <p>That last line is expected on a fresh install — you configure it next.</p>
+
+    <h2>3. Configure</h2>
+    <p>Open <code>plugins/PluginPulseCompanion/config.yml</code>. Here's a complete, worked example
+      for three real-world-shaped plugins:</p>
+    <pre><code>plugins:
+  # Key = the plugin's EXACT name as shown by /plugins.
+  EssentialsX:
+    modrinth: essentialsx        # its Modrinth slug
+    mode: notify                 # tell me on join; don't download
+
+  WorldGuard:
+    github: EngineHub/WorldGuard  # its GitHub owner/repo (uses Releases)
+    mode: download                # download + stage; applies on restart
+
+  MyPaidPlugin:
+    hangar: Author/My-Plugin      # its Hangar project slug
+    mode: check-only              # silent; only shown via /pluginpulse
+
+# Sent with API requests. Modrinth's rules require a way to reach you
+# (an email or a website/URL).
+user-agent-contact: "you@example.com"
+
+# How often to check each plugin, in hours (minimum 1).
+check-interval-hours: 6</code></pre>
+
+    <p><strong>Every field explained:</strong></p>
+    <table>
+      <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><code>plugins:</code></td><td>the list of plugins to manage; each key is a plugin's exact name</td></tr>
+        <tr><td><code>modrinth</code> / <code>github</code> / <code>hangar</code></td>
+            <td>where <em>that</em> plugin's updates come from — see
+              <a href="../update-sources/">finding your update source</a>. Use exactly one per plugin</td></tr>
+        <tr><td><code>mode</code></td><td>what to do when an update is found (see below)</td></tr>
+        <tr><td><code>track</code></td><td><em>(optional, per plugin)</em> follow a <code>-&lt;track&gt;</code> release line, e.g. <code>track: mc26</code></td></tr>
+        <tr><td><code>user-agent-contact</code></td><td>how the update APIs can reach you; required by Modrinth</td></tr>
+        <tr><td><code>check-interval-hours</code></td><td>how often to check (minimum 1)</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>What each <code>mode</code> does</strong> — in plain terms:</p>
+    <ul>
+      <li><code>off</code> — ignore this plugin.</li>
+      <li><code>check-only</code> — check quietly; the result only shows in <code>/pluginpulse</code>.</li>
+      <li><code>notify</code> — check and tell admins (console + on join). <strong>Nothing is downloaded.</strong></li>
+      <li><code>download</code> — check, download, verify, and <strong>stage</strong> the update.
+        It applies the next time you restart the server.</li>
+      <li><code>auto-stage</code> — like <code>download</code>, but staged automatically as soon as it's found.</li>
+    </ul>
+    <p>After editing, either restart or run <code>/pluginpulse reload</code>.</p>
+
+    <h2>4. Use</h2>
+    <p>The command is <code>/pluginpulse</code> (aliases <code>/ppc</code>, <code>/pulse</code>),
+      permission <code>pluginpulse.admin</code> (ops have it by default).</p>
+    <ul>
+      <li><code>/pluginpulse</code> or <code>/pluginpulse list</code> — show each managed plugin
+        and whether an update is available.</li>
+      <li><code>/pluginpulse check [plugin|all]</code> — check now.</li>
+      <li><code>/pluginpulse download [plugin|all]</code> — download + stage available updates.</li>
+      <li><code>/pluginpulse restore [plugin|all]</code> — stage the previous backup of a plugin
+        (undo a bad update), applied on restart.</li>
+      <li><code>/pluginpulse reload</code> — re-read <code>config.yml</code>.</li>
+    </ul>
+    <p><strong>How staged updates apply:</strong> downloading stages the new jar into the server's
+      update folder. <strong>Restart the server</strong> and the server swaps it in on boot.
+      There's no live jar-swapping — that's deliberate, so nothing changes underneath a running
+      server.</p>
+
+    <h2>FAQ</h2>
+    <ul>
+      <li><strong>Does it work on Spigot?</strong> Yes — Paper, Spigot, and Folia.</li>
+      <li><strong>My plugin isn't on Modrinth/Hangar.</strong> Use <code>github: owner/repo</code>
+        if its releases are on GitHub. If it's published nowhere with an API, the companion can't
+        track it.</li>
+      <li><strong>Is it safe?</strong> By default (<code>notify</code>), nothing is downloaded —
+        you're only informed. Even in <code>download</code>/<code>auto-stage</code>, updates are
+        checksum-verified, the old jar is backed up, and nothing is swapped until you restart.</li>
+      <li><strong>A plugin shows as "skipped".</strong> The companion prints why (not installed,
+        no source configured, <code>mode: off</code>, etc.). Check the name matches
+        <code>/plugins</code> exactly and it has one source.</li>
+    </ul>
+  </main>
+</div>
+</body>
+</html>

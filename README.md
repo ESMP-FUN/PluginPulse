@@ -6,13 +6,13 @@ Keep Minecraft server plugins up to date, three ways — depending on who you ar
 
 | You… | Use | Guide |
 |---|---|---|
-| **build your own plugin** and want it to self-update | shade the library | **[docs/adopt-library.md](docs/adopt-library.md)** |
-| **run a server** and just want your installed plugins updated | the companion plugin | **[docs/companion.md](docs/companion.md)** |
-| **have a jar** you can't or won't rebuild | the browser tool | **[docs/web-tool.md](docs/web-tool.md)** |
+| **build your own plugin** and want it to self-update | shade the library | **[Adopting the library](https://esmp-fun.github.io/PluginPulse/adopting-the-library/)** |
+| **run a server** and just want your installed plugins updated | the companion plugin | **[Companion plugin](https://esmp-fun.github.io/PluginPulse/companion-plugin/)** |
+| **have a jar** you can't or won't rebuild | the browser tool | **[Web tool](https://esmp-fun.github.io/PluginPulse/web-tool/)** |
 
 Each guide stands alone and assumes no prior knowledge — follow only *yours*.
-New to a term? See the **[glossary](docs/glossary.md)**. Not sure where your
-plugin's updates live? See **[finding your update source](docs/update-sources.md)**.
+New to a term? See the **[glossary](https://esmp-fun.github.io/PluginPulse/glossary/)**. Not sure where your
+plugin's updates live? See **[finding your update source](https://esmp-fun.github.io/PluginPulse/update-sources/)**.
 
 Everything below is the **developer reference** for the library (Path 1). Server
 owners and jar-only users should follow their guide above instead.
@@ -55,7 +55,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.darkstarworks.PluginPulse:pluginpulse-core:v0.5.0")
+    implementation("com.github.darkstarworks.PluginPulse:pluginpulse-core:v0.8.0")
 }
 ```
 

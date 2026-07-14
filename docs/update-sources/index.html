@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Finding your update source — PluginPulse docs</title>
+  <link rel="stylesheet" href="../docs.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="../">Plugin<span>Pulse</span></a>
+    <p class="brand-sub">Auto-updates for Minecraft plugins</p>
+    <nav>
+      <div class="nav-group">
+        <h2>Guides</h2>
+        <a href="../adopting-the-library/">Adopting the library</a>
+        <a href="../companion-plugin/">Companion plugin</a>
+        <a href="../web-tool/">Web tool</a>
+      </div>
+      <div class="nav-group">
+        <h2>Reference</h2>
+        <a href="../update-sources/" aria-current="page">Finding update sources</a>
+        <a href="../glossary/">Glossary</a>
+      </div>
+      <div class="nav-group">
+        <h2>Links</h2>
+        <a href="../">Open the web tool</a>
+        <a href="https://github.com/ESMP-FUN/PluginPulse">GitHub</a>
+        <a href="https://github.com/ESMP-FUN/PluginPulse/releases">Releases</a>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <h1>Finding your update source</h1>
+    <p class="lede">PluginPulse checks one or more <strong>sources</strong> to learn when a new
+      version of a plugin is out. You need at least one. This page explains how to find the right
+      identifier for each. It's shared by all three guides.</p>
+
+    <p>You can list more than one — one is the <strong>primary</strong> and the rest are
+      <strong>fallbacks</strong> tried in order if the primary is unreachable. By default the order
+      is Modrinth, then GitHub, then Hangar, then Jenkins. To choose your own order, add a
+      <code>source-order</code> list (primary first); any source you leave out is appended after
+      the ones you list:</p>
+    <pre><code>modrinth: my-plugin
+github: me/my-plugin
+source-order: [github, modrinth]   # check GitHub first, Modrinth as fallback</code></pre>
+    <p>In the web tool, use the <strong>priority</strong> dropdown next to each source instead —
+      it writes <code>source-order</code> for you.</p>
+
+    <h2>Modrinth</h2>
+    <p>For plugins published on <a href="https://modrinth.com">modrinth.com</a>.</p>
+    <ul>
+      <li>Open the plugin's page. The URL looks like
+        <code>https://modrinth.com/plugin/</code><strong><code>my-plugin</code></strong>.</li>
+      <li>The bold part is the <strong>slug</strong> — that's your Modrinth value.</li>
+    </ul>
+    <pre><code>modrinth: my-plugin</code></pre>
+    <blockquote><p>Modrinth's API asks every caller to identify itself. Provide a contact (an
+      email or URL) via <code>user-agent-contact</code> so your checks aren't rejected.</p></blockquote>
+
+    <h2>GitHub Releases</h2>
+    <p>For plugins whose releases are published on GitHub's <strong>Releases</strong> page (each
+      release must attach the plugin <code>.jar</code> as an asset).</p>
+    <ul>
+      <li>Find the repository URL:
+        <code>https://github.com/</code><strong><code>owner/repo</code></strong>.</li>
+      <li>Use the bold <code>owner/repo</code> part.</li>
+    </ul>
+    <pre><code>github: owner/repo</code></pre>
+    <blockquote><p>GitHub allows only ~60 checks per hour from one server's IP when
+      unauthenticated. PluginPulse spaces checks out and remembers the last result, so the default
+      interval is fine — just don't set an aggressively short one.</p></blockquote>
+
+    <h2>Hangar</h2>
+    <p>For plugins on <a href="https://hangar.papermc.io">hangar.papermc.io</a>.</p>
+    <ul>
+      <li>Open the project. The URL looks like
+        <code>https://hangar.papermc.io/</code><strong><code>author</code></strong><code>/</code><strong><code>My-Plugin</code></strong>.</li>
+      <li>The <strong>project slug</strong> is the last part (<code>My-Plugin</code>).</li>
+    </ul>
+    <pre><code>hangar: My-Plugin</code></pre>
+
+    <h2>Jenkins (CI snapshots)</h2>
+    <p>For plugins whose builds come from a <strong>Jenkins</strong> server — for example
+      FastAsyncWorldEdit
+      (<a href="https://ci.athion.net/job/FastAsyncWorldEdit/">ci.athion.net/job/FastAsyncWorldEdit</a>),
+      LuckPerms snapshots (ci.lucko.me), EssentialsX dev builds, and many others. PluginPulse
+      follows the job's <strong>last successful build</strong>.</p>
+    <ul>
+      <li>Use the <strong>job page URL</strong> — the page listing the build history, ending in
+        <code>/job/&lt;Name&gt;/</code>.</li>
+      <li>Many jobs archive <strong>several jars</strong> per build (FAWE ships Bukkit, CLI and
+        Paper jars). Add <code>jenkins-artifact</code> — a pattern matched against the file name —
+        to pick the right one.</li>
+    </ul>
+    <pre><code>jenkins: https://ci.athion.net/job/FastAsyncWorldEdit/
+jenkins-artifact: "Paper"     # optional; regex, case-insensitive
+require-hash: false           # needed for download/auto modes — see below</code></pre>
+    <blockquote><p><strong>Two things to know about CI builds.</strong> (1) Jenkins publishes no
+      checksums, so with the default <code>require-hash: true</code> PluginPulse will notify you
+      but refuse to auto-download; set <code>require-hash: false</code> for this plugin if you
+      accept unverified CI artifacts. (2) These are <strong>development snapshots</strong>, not
+      releases — every successful build is offered, so expect frequent updates and the occasional
+      broken build. Prefer Modrinth/Hangar/GitHub when the plugin publishes proper releases
+      there.</p></blockquote>
+
+    <h3>Known-good jobs and their filters</h3>
+    <p>Verified against the live servers (July 2026). Where a build archives several jars, the
+      listed <code>jenkins-artifact</code> picks the right one:</p>
+    <table>
+      <thead><tr><th>Plugin</th><th><code>jenkins:</code></th><th><code>jenkins-artifact:</code></th></tr></thead>
+      <tbody>
+        <tr><td>FastAsyncWorldEdit</td><td><code>https://ci.athion.net/job/FastAsyncWorldEdit/</code></td>
+            <td><code>Paper</code> (or <code>Bukkit</code>)</td></tr>
+        <tr><td>LuckPerms</td><td><code>https://ci.lucko.me/job/LuckPerms/</code></td>
+            <td><code>Bukkit-5</code> (plain <code>Bukkit</code> would also match <code>Bukkit-Legacy</code>)</td></tr>
+        <tr><td>spark</td><td><code>https://ci.lucko.me/job/spark/</code></td>
+            <td><code>paper</code> (or <code>bukkit</code>)</td></tr>
+        <tr><td>EssentialsX</td><td><code>https://ci.ender.zone/job/EssentialsX/</code></td>
+            <td><code>^EssentialsX-</code> for the core; each module jar is also archived</td></tr>
+        <tr><td>ViaVersion</td><td><code>https://ci.viaversion.com/job/ViaVersion/</code></td>
+            <td><em>(none needed — single jar)</em></td></tr>
+        <tr><td>PlaceholderAPI</td><td><code>https://ci.extendedclip.com/job/PlaceholderAPI/</code></td>
+            <td><code>PlaceholderAPI-[\d.]+\.jar$</code> — <strong>required</strong>; without it the
+              <code>-plain</code> classifier jar is picked first</td></tr>
+        <tr><td>BungeeCord</td><td><code>https://ci.md-5.net/job/BungeeCord/</code></td>
+            <td><code>^BungeeCord</code> — module command jars are archived alongside it</td></tr>
+        <tr><td>HolographicDisplays</td><td><code>https://ci.codemc.io/job/filoghost/job/HolographicDisplays/</code></td>
+            <td><em>(none needed)</em> — nested CodeMC folder jobs work with the plain job-page URL</td></tr>
+      </tbody>
+    </table>
+    <p>The PlaceholderAPI row shows the general rule: when a job archives classifier jars
+      (<code>-plain</code>, <code>-shaded</code>, <code>-all</code>, per-platform variants), set an
+      explicit <code>jenkins-artifact</code> rather than trusting the default "first jar that isn't
+      <code>-sources</code>/<code>-javadoc</code>" pick.</p>
+    <p>Some Jenkins servers can't be used: <strong>ci.citizensnpcs.co</strong> (Citizens, Denizen)
+      blocks the JSON API at its web proxy, and <strong>ci.dmulloy2.net</strong> (ProtocolLib) sits
+      behind a Cloudflare challenge — both return HTML instead of JSON, so the check fails.</p>
+
+    <h2>Self-hosted (advanced)</h2>
+    <p>If the plugin author publishes their own JSON manifest (for example, a paid plugin behind a
+      licence key), that's a <strong>custom source</strong> — see the
+      <a href="https://github.com/ESMP-FUN/PluginPulse#sources">developer reference</a>
+      <code>CustomJsonSource</code>. The companion plugin and web tool don't configure custom
+      sources; use the library directly.</p>
+
+    <h2>Which should I pick?</h2>
+    <p>Whichever the plugin's author actually publishes to. If a plugin is on Modrinth, use
+      Modrinth. If it's only on GitHub, use <code>github</code>. Listing a second source as a
+      fallback (e.g. Modrinth primary, GitHub fallback) is a nice-to-have, not required.</p>
+  </main>
+</div>
+</body>
+</html>
