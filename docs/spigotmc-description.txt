@@ -1,10 +1,12 @@
-[CENTER][SIZE=6][B]PluginPulse[/B][/SIZE]
-[SIZE=4][COLOR=#7f8c8d]Keep your plugins up to date — the way that suits you[/COLOR][/SIZE]
+[CENTER][SIZE=7][B]PluginPulse[/B][/SIZE]
+
+[SIZE=4][COLOR=#7f8c8d]Keep your plugins up-to-date in the way that suits you.[/COLOR][/SIZE]
+
 [SIZE=3]Paper · Spigot · Folia — 1.20.5–1.21.x and 26.x[/SIZE][/CENTER]
 
-[CENTER][SIZE=4][I]Most servers find out a plugin is outdated the hard way — a crash, a[/I]
-[I]security advisory, or a player pointing it out. PluginPulse tells you first, and[/I]
-[I]can download, verify and stage the update for you.[/I][/SIZE]
+[CENTER][SIZE=4][I]Most servers find out a plugin is outdated the hard way;[/I]
+[I]a crash, a security advisory, or a player pointing it out. [/I]
+[I]PluginPulse tells you first, and can download, verify and prepare (stage) the update for you.[/I][/SIZE]
 [SIZE=3][COLOR=#808080]
 ——————————————————————————————
 [/COLOR][/SIZE][/CENTER]
@@ -129,12 +131,12 @@ rollback — all dependency-free. See the library guide on GitHub.
 [CENTER][SIZE=3][COLOR=#808080]
 ——————————————————————————————
 [/COLOR][/SIZE][/CENTER]
-[SIZE=6][COLOR=#0000ff][B]Free and open source[/B][/COLOR][/SIZE]
+[SIZE=6][COLOR=#0000ff][B]100% Free & Source Available[/B][/COLOR][/SIZE]
 [LIST]
 [*]No licence key
 [*]No telemetry
 [*]No "premium" feature gating
-[*]MIT-licensed — full source on GitHub, issues and PRs welcome
+[*]licensed source-available — full source on GitHub, issues and PRs welcome
 [/LIST]
 [CENTER][SIZE=3][COLOR=#808080]
 ——————————————————————————————

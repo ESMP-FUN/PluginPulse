@@ -254,4 +254,5 @@ convenience for small, self-contained updates.
 
 ## License
 
-[MIT](LICENSE)
+Source-available — free to view, study, and run; no commercial use or
+redistribution. See [LICENSE](LICENSE) for the full terms.

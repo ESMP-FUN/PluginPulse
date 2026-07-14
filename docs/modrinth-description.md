@@ -163,9 +163,9 @@ uploaded anywhere; all the work happens locally on the page.
 
 ---
 
-## Free and open source
+## 100% Free & Source Available
 
-No licence key, no telemetry, no "premium" gating. MIT-licensed, full source on
+No licence key, no telemetry, no "premium" gating. Source-available licence, full source on
 [GitHub](https://github.com/ESMP-FUN/PluginPulse) — issues and PRs welcome.
 
 ---
@@ -186,7 +186,7 @@ No licence key, no telemetry, no "premium" gating. MIT-licensed, full source on
 
 Made by [darkstarworks](https://github.com/darkstarworks)
 
-Did you know I have other plugins? Check them out on Modrinth [ [here](https://modrinth.com/organization/esmp) ] and [ [here](https://modrinth.com/user/darkstarworks) ]
+Did you know I have other plugins? [ [Check them out here](https://modrinth.com/organization/esmp) ]
 
 Donating is free! (for me): [Ko-Fi](https://ko-fi.com/darkstarworks)
 
