@@ -75,6 +75,10 @@
             <tr><td>Jenkins artifact filter</td><td><em>(optional)</em> case-insensitive regex picking one
                 jar when a build archives several, e.g. <code>Paper</code></td>
                 <td>the job's build artifact list</td></tr>
+            <tr><td>GitHub pass key</td><td><em>(optional)</em> only for a <strong>private</strong> GitHub
+                repository. Prefer <code>${GITHUB_TOKEN}</code> and set that on the server; a key typed
+                in full is written into the jar, so only do that for a jar that stays on your own
+                server</td><td>your repository's settings</td></tr>
             <tr><td>Update mode</td><td>how it should behave (see below)</td><td>your choice</td></tr>
             <tr><td>Command root</td><td><em>(optional)</em> e.g. <code>/myplugin</code> — a command to
                 manage updates</td><td>your choice</td></tr>
@@ -89,11 +93,12 @@
             <tr><td>Settle time</td><td><em>(optional)</em> ignore a release until it has been publicly
                 available for this many hours, so an author's own quick fix-up release lands before the
                 server takes the update</td><td>off unless ticked; 18 hours if you leave the box blank</td></tr>
+            <tr><td>Install without restarting</td><td><em>(optional)</em> swap the plugin over while the
+                server runs. Checks first and falls back to a restart-install when that would be unsafe
+                (Folia, other plugins depending on this one, a bundled native library)</td>
+                <td>leave off if unsure</td></tr>
           </tbody>
         </table>
-        <p>Two settings are <strong>not</strong> in the browser tool: a token for a
-          <strong>private</strong> GitHub repo, and installing without a restart. Both are available in
-          the command-line version, <code>pluginpulse-inject</code>.</p>
         <p><strong><code>mode</code> for beginners:</strong></p>
         <ul>
           <li><code>notify</code> — tells admins when an update exists; the notice has a

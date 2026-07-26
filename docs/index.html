@@ -124,6 +124,16 @@
             <option value="1">#1</option><option value="2" selected>#2</option><option value="3">#3</option><option value="4">#4</option>
           </select>
         </div>
+        <div class="source-input">
+          <input id="githubToken" type="text"
+            placeholder="only for a private repository — see the note below">
+        </div>
+        <p class="hint">Leave the second box empty for a normal, public project. If the code is kept
+          private, GitHub won't let the plugin look at it without a pass key, and that box is where the
+          key goes. <strong>Safest way:</strong> type <code>${GITHUB_TOKEN}</code> and put the real key in
+          a setting called <code>GITHUB_TOKEN</code> on the server that runs the plugin — then the key
+          itself never goes into the file you hand out. Typing the key here instead puts a copy of it
+          inside the jar, so only do that for a jar that stays on your own server.</p>
       </div>
 
       <div class="source">
@@ -200,6 +210,14 @@
         <label>Wait this long first <span class="opt">(hours — only used when the box above is ticked)</span>
           <input id="holdHours" type="number" min="1" placeholder="18">
         </label>
+
+        <label class="check"><input id="hotReload" type="checkbox">
+          Install updates without restarting the server</label>
+        <p class="hint">Normally an update waits for your next restart. With this on, the plugin swaps
+          itself over while the server keeps running — players stay connected. It checks first, and if
+          swapping would be risky (on a Folia server, when other plugins are built on top of this one, or
+          when the plugin loads a helper file the server can only load once), it leaves the update waiting
+          for your next restart instead. Safe to leave off if you're unsure.</p>
 
         <label class="check"><input id="upgrade" type="checkbox">
           This jar already has PluginPulse — change its settings</label>

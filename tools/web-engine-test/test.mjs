@@ -49,7 +49,8 @@ async function main() {
   const opts = {
     modrinth: 'demo-slug', permission: 'demo.admin', commandRoot: '/demo',
     mode: 'notify', contact: 'me@example.com', checkIntervalHours: 6,
-    holdNewUpdatesHours: 18,
+    holdNewUpdatesHours: 18, hotReload: true,
+    github: 'me/private-plugin', githubToken: '${GITHUB_TOKEN}',
   };
   const out = await PPI.injectJar(jar, opts, assets);
   const zip = await JSZip.loadAsync(out);
@@ -70,6 +71,13 @@ async function main() {
   ok(pulseYml.includes('command-root: /demo'), 'pluginpulse.yml carries command-root');
   ok(pulseYml.includes('hold-new-updates: true') && pulseYml.includes('hold-new-updates-hours: 18'),
     'pluginpulse.yml carries the settle-in wait');
+  // Quoted, or snakeyaml reads ${...} as an alias and the private repo breaks.
+  ok(pulseYml.includes('github-token: "${GITHUB_TOKEN}"'), 'pluginpulse.yml quotes the github token');
+  ok(pulseYml.includes('hot-reload: true'), 'pluginpulse.yml carries hot-reload');
+  // hot-reload only does anything if the module rode along in the payload and
+  // was relocated with the rest — ReloadEngines looks for it beside itself.
+  ok(names.includes(pkg + '/pluginpulse/hotreload/HotReloadEngine.class'),
+    'hot-reload module relocated into the target package');
 
   // Wrapper Utf8 constants fully substituted (no placeholders left).
   const wrapper = await zip.file(pkg + '/DemoPlugin__Pulse.class').async('uint8array');
@@ -85,6 +93,12 @@ async function main() {
   const ps = utf8Strings(pp);
   ok(!ps.some((s) => s.includes('io/github/darkstarworks/pluginpulse') || s.includes('io.github.darkstarworks.pluginpulse')),
     'relocated PluginPulse has no old-package references');
+
+  // Same for the hot-reload module: it reaches back into core types, so a missed
+  // rewrite there would only surface as a NoClassDefFoundError mid-reload.
+  const hre = await zip.file(pkg + '/pluginpulse/hotreload/HotReloadEngine.class').async('uint8array');
+  ok(!utf8Strings(hre).some((s) => s.includes('io/github/darkstarworks/pluginpulse') || s.includes('io.github.darkstarworks.pluginpulse')),
+    'relocated hot-reload engine has no old-package references');
   ok(ps.some((s) => s.includes(pkg + '/pluginpulse')), 'relocated PluginPulse references the new package');
 
   // isFinal detection sanity: a non-final wrapper reads as non-final.

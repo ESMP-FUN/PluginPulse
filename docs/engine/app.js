@@ -112,6 +112,7 @@
       hangar: $('hangar').value.trim(),
       jenkins: $('jenkins').value.trim(),
       jenkinsArtifact: $('jenkinsArtifact').value.trim(),
+      githubToken: $('githubToken').value.trim(),
       sourceOrder: sourceOrder,
       permission: $('permission').value.trim(),
       commandRoot: $('commandRoot').value.trim(),
@@ -124,6 +125,7 @@
       holdNewUpdatesHours: $('holdNew').checked
         ? (parseInt($('holdHours').value, 10) || 18)
         : null,
+      hotReload: $('hotReload').checked,
       upgrade: $('upgrade').checked,
     };
   }
@@ -281,6 +283,23 @@
       toast({ kind: 'err', title: 'Jenkins URL looks wrong',
         lines: ['Use the full job page URL, starting with https:// — e.g. https://ci.athion.net/job/FastAsyncWorldEdit/'] });
       return;
+    }
+    if (opts.githubToken && !opts.github) {
+      toast({ kind: 'err', title: 'Pass key without a GitHub project',
+        lines: ['The pass key box is filled in but the GitHub box is empty. Fill in the GitHub project, '
+          + 'or clear the pass key.'] });
+      return;
+    }
+    // A literal key ends up readable inside the jar. That's fine for a jar that
+    // stays put, and a bad idea for one being handed out, so say so once and let
+    // them decide rather than blocking the download.
+    if (opts.githubToken && !/^\$\{[^}]+\}$/.test(opts.githubToken)) {
+      toast({ kind: 'warn', timeout: 20000, title: 'Your pass key goes inside this jar',
+        lines: [
+          'Anyone you give the jar to can read the key out of it and use it on your private project.',
+          'Keep this jar on your own server — or cancel, type ${GITHUB_TOKEN} in that box instead, and '
+            + 'put the real key in a setting of that name on the server.',
+        ] });
     }
     try {
       status('Generating…', '');
