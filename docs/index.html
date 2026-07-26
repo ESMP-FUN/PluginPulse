@@ -4,41 +4,101 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PluginPulse — add auto-updates to a plugin jar</title>
+  <meta name="description" content="Add an auto-updater to a compiled Paper/Spigot plugin jar. Runs entirely in your browser — your jar is never uploaded. No source code, no build tools, no account.">
+  <link rel="canonical" href="https://esmp-fun.github.io/PluginPulse/">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#0f1216">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PluginPulse">
+  <meta property="og:title" content="Add auto-updates to a plugin jar you already have">
+  <meta property="og:description" content="No source code. No build tools. No account. Runs in your browser — your jar is never uploaded.">
+  <meta property="og:url" content="https://esmp-fun.github.io/PluginPulse/">
+  <meta property="og:image" content="https://esmp-fun.github.io/PluginPulse/assets/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="PluginPulse — add auto-updates to a plugin jar you already have.">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="./">
+      <img src="assets/icon.svg" alt="" width="26" height="26">
+      <span class="wordmark">Plugin<span>Pulse</span></span>
+    </a>
+    <nav class="header-links">
+      <a href="web-tool/">Guide</a>
+      <a href="glossary/">Glossary</a>
+      <a href="https://github.com/ESMP-FUN/PluginPulse">Source</a>
+    </nav>
+  </div>
+</header>
+
 <main>
-  <h1>PluginPulse Web Tool</h1>
-  <p class="lede">
-    Add an auto-updater to a compiled Paper/Spigot plugin — no source code, no build tools.
-    <strong>Everything runs in your browser. Your jar is never uploaded anywhere.</strong>
-  </p>
+  <div class="hero">
+    <h1>Add auto-updates to a plugin jar you already have</h1>
+    <p class="lede">For a compiled Paper or Spigot plugin — no source code, no build tools,
+      no account. <span id="pulseCounter" class="counter" hidden></span></p>
+    <ul class="trust">
+      <li><span><strong>Runs in your browser</strong></span></li>
+      <li><span>Your jar is <strong>never uploaded</strong></span></li>
+      <li><span><strong>Free &amp; open source</strong></span></li>
+    </ul>
+  </div>
 
   <section class="paths">
     <p>Not what you need?</p>
     <ul>
-      <li><a href="adopting-the-library/">I build my own plugin</a> → shade the library.</li>
-      <li><a href="companion-plugin/">I run a server and just want my plugins updated</a> → the companion plugin.</li>
-      <li>You're in the right place if you have a jar but can't or won't rebuild it.</li>
+      <li><a href="adopting-the-library/">I build my own plugin</a> — add the updater to your code instead.</li>
+      <li><a href="companion-plugin/">I run a server and just want my plugins updated</a> — use the companion plugin.</li>
+      <li>You're in the right place if you have a jar you can't or won't rebuild.</li>
     </ul>
   </section>
 
   <ol class="steps">
     <li>
-      <h2 class="step-head">1. Choose your plugin jar
-        <span id="pulseCounter" class="counter" hidden></span>
-      </h2>
-      <input type="file" id="file" accept=".jar">
+      <h2>Choose your plugin jar</h2>
+      <p class="step-sub">The file stays on your computer. Nothing is sent anywhere.</p>
+
+      <label class="drop" id="drop">
+        <svg class="drop-mark" viewBox="0 0 24 24" fill="none" stroke="#ffb454" stroke-width="1.7"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"/>
+          <path d="M3.5 15v3a2.5 2.5 0 0 0 2.5 2.5h12a2.5 2.5 0 0 0 2.5-2.5v-3"/>
+        </svg>
+        <span class="drop-title">Drop your plugin .jar here</span>
+        <span class="drop-sub">or click to browse your files</span>
+        <input type="file" id="file" accept=".jar">
+      </label>
+
+      <div class="file-chip" id="fileChip" hidden>
+        <span class="tick" aria-hidden="true">✓</span>
+        <span class="file-meta">
+          <span class="file-name" id="fileName"></span>
+          <span class="file-size" id="fileSize"></span>
+        </span>
+        <button type="button" class="link-btn" id="clearFile">Choose a different jar</button>
+      </div>
+
+      <ul class="assure">
+        <li><span><strong>Your original jar is never changed.</strong> You get a brand-new copy back, saved
+          to your downloads — the file you picked stays exactly as it was.</span></li>
+        <li><span><strong>Nothing is uploaded.</strong> The whole process happens inside this page, so it
+          works with the internet switched off once the page has loaded.</span></li>
+        <li><span><strong>You can look before you leap.</strong> Preview shows you what's inside the jar
+          and whether it can be updated, without changing a thing.</span></li>
+      </ul>
+
       <button id="preview" type="button">Preview jar</button>
       <pre id="previewOut" class="inspect"></pre>
-      <p class="hint">Use this to review the current plugin and author details before making any changes.
-        Nothing is modified — if the jar can't be processed, you'll get a plain-English explanation.</p>
     </li>
 
     <li>
-      <h2>2. Where do updates come from?</h2>
-      <p class="hint">Plugin updating will only work if at least one of these is available.
-        Set the priority (#1 is checked first) to choose the order they're tried in.</p>
+      <h2>Where do updates come from?</h2>
+      <p class="step-sub">Fill in at least one — this is the page the plugin will check for new versions.
+        If more than one is filled in, #1 is tried first and the others are backups.
+        <a href="update-sources/">How do I find these?</a></p>
 
       <div class="source">
         <div class="source-head">
@@ -81,8 +141,8 @@
 
       <div class="source">
         <div class="source-head">
-          <span class="source-name">Jenkins (CI snapshots)</span>
-          <span class="source-url">job page URL, e.g. <span class="slug">ci.athion.net/job/FastAsyncWorldEdit/</span></span>
+          <span class="source-name">Jenkins</span>
+          <span class="source-url">the job page, e.g. <span class="slug">ci.athion.net/job/FastAsyncWorldEdit/</span></span>
         </div>
         <div class="source-input">
           <input id="jenkins" type="text" placeholder="https://ci.athion.net/job/FastAsyncWorldEdit/">
@@ -92,72 +152,101 @@
         </div>
         <div class="source-input">
           <input id="jenkinsArtifact" type="text"
-            placeholder="artifact filter (optional) — regex on the jar name, e.g. Paper">
+            placeholder="optional: which file to pick when a build has several, e.g. Paper">
         </div>
-        <p class="hint">Follows the job's last successful build — these are dev snapshots, not releases.
-          Jenkins publishes no checksums, so with <strong>download</strong> or <strong>auto-stage</strong> mode the
-          tool writes <code>require-hash: false</code> for you; otherwise CI updates would be notify-only.</p>
+        <p class="hint">For plugins that publish test builds from their own build server. These are
+          work-in-progress builds rather than finished releases, so expect rough edges. Builds like these
+          come without the security check the tool normally does, so the tool turns that check off for
+          this plugin — otherwise it would refuse every download.</p>
       </div>
     </li>
 
     <li>
-      <h2>3. How should it behave?</h2>
+      <h2>How should it behave?</h2>
+      <p class="step-sub">What the plugin does when it finds a newer version.</p>
       <label>Update mode
         <select id="mode">
-          <option value="notify" selected>notify — tell admins on join (no download)</option>
-          <option value="check-only">check-only — silent; only shown on command</option>
-          <option value="download">download — download &amp; stage; applies on restart</option>
-          <option value="auto-stage">auto-stage — download automatically when found</option>
+          <option value="notify" selected>notify — tell admins on join (nothing is downloaded)</option>
+          <option value="check-only">check-only — stay quiet; only answer when asked</option>
+          <option value="download">download — download it, ready for the next restart</option>
+          <option value="auto-stage">auto-stage — download it as soon as it appears</option>
         </select>
       </label>
-      <label>Contact <span class="opt">(recommended)</span>
-        <input id="contact" type="text" placeholder="email or URL — required by Modrinth's API rules">
+      <label>Your contact details <span class="opt">(recommended)</span>
+        <input id="contact" type="text" placeholder="email or website — Modrinth asks for a way to reach you">
       </label>
 
       <details class="advanced">
         <summary>Advanced settings</summary>
-        <label>Command root <span class="opt">(optional)</span>
-          <input id="commandRoot" type="text" placeholder="e.g. /myplugin — self-registered if free">
+        <label>Command <span class="opt">(optional)</span>
+          <input id="commandRoot" type="text" placeholder="e.g. /myplugin — lets admins check for updates in game">
         </label>
         <label>Permission <span class="opt">(optional)</span>
-          <input id="permission" type="text" placeholder="e.g. myplugin.admin — who sees notices">
+          <input id="permission" type="text" placeholder="e.g. myplugin.admin — who is told about updates">
         </label>
-        <label>Release track <span class="opt">(optional)</span>
-          <input id="track" type="text" placeholder="e.g. mc26 — follow a &quot;-track&quot; release line">
+        <label>Release line <span class="opt">(optional)</span>
+          <input id="track" type="text" placeholder="e.g. mc26 — only if the plugin ships two parallel versions">
         </label>
-        <label>Check interval (hours) <span class="opt">(optional)</span>
+        <label>Check for updates every <span class="opt">(hours)</span>
           <input id="interval" type="number" min="1" placeholder="6">
         </label>
-        <label class="check"><input id="upgrade" type="checkbox"> Re-inject a jar that already has PluginPulse</label>
+
+        <label class="check"><input id="holdNew" type="checkbox">
+          Let a brand-new release settle before taking it</label>
+        <p class="hint">Sometimes an author publishes an update that turns out to be broken and puts out a
+          fix a few hours later. Tick this and the plugin ignores a release until it has been available for
+          the number of hours below, so those quick fix-ups land first. It goes by the date shown on the
+          plugin's own page, and an admin can still install a release straight away with the update command.</p>
+        <label>Wait this long first <span class="opt">(hours — only used when the box above is ticked)</span>
+          <input id="holdHours" type="number" min="1" placeholder="18">
+        </label>
+
+        <label class="check"><input id="upgrade" type="checkbox">
+          This jar already has PluginPulse — change its settings</label>
       </details>
     </li>
 
     <li>
-      <h2>4. Generate</h2>
+      <h2>Generate your updated jar</h2>
+      <p class="step-sub">You'll get a new file called <code>yourplugin-pulse.jar</code> in your downloads.</p>
       <label class="check"><input id="rights" type="checkbox">
         I have the right to modify and redistribute this jar.</label>
       <button id="generate" type="button" class="primary">Generate updated jar</button>
       <p id="status" class="status"></p>
-      <p class="hint"><strong>Test the result on your own server before distributing it.</strong>
-        The tool can't verify the jar boots.</p>
+      <p class="hint"><strong>Try the new jar on your own server before giving it to anyone else.</strong>
+        The tool can't start the plugin for you, so it can't promise the plugin still runs.</p>
     </li>
   </ol>
 
-  <section class="limits">
-    <h2>Limits</h2>
+  <section class="goodtoknow">
+    <h2>Good to know</h2>
     <ul>
-      <li>Uses the <strong>wrapper</strong> strategy. If the main class is <code>final</code> (the default for Kotlin
-        plugins), the tool clears that flag so the wrapper can attach — this only permits subclassing and is safe for
-        a plugin main class. For editing final mains in place instead, the CLI <code>pluginpulse-inject</code> uses the
-        instrument strategy.</li>
-      <li>Works on any class-file version (including Java&nbsp;25 / mc26), legacy <code>plugin.yml</code> and
-        <code>paper-plugin.yml</code>.</li>
-      <li>It can't confirm the jar runs — always test before sharing.</li>
+      <li>Works with plugins built for any Minecraft version this tool has seen, old and new alike.</li>
+      <li>The tool can't run the plugin, so it can't confirm it still works — always test the new jar
+        yourself first.</li>
+      <li>Some plugins are built in a way that this in-page tool can't rearrange. If that happens you'll
+        get a plain-English message saying so, and the command-line version can usually still do it.</li>
     </ul>
-    <p class="foot"><a href="web-tool/">Web tool guide</a> ·
-      <a href="update-sources/">Finding update sources</a> ·
-      <a href="https://github.com/ESMP-FUN/PluginPulse">PluginPulse on GitHub</a></p>
+    <details>
+      <summary>Technical detail, for developers</summary>
+      <p>The page uses the wrapper strategy: it generates a subclass of the plugin's main class, repoints
+        the descriptor at it, and relocates the shaded core under the plugin's own package. A
+        <code>final</code> main class (the Kotlin default) has that flag cleared so the wrapper can
+        subclass it, which only permits subclassing and is safe for a plugin main class. The
+        <code>pluginpulse-inject</code> CLI instruments final mains in place instead. Both produce the
+        same wiring; the class-file version is irrelevant to either.</p>
+    </details>
   </section>
+
+  <footer class="site-footer">
+    <a href="web-tool/">Web tool guide</a>
+    <span class="sep">·</span>
+    <a href="update-sources/">Finding update sources</a>
+    <span class="sep">·</span>
+    <a href="glossary/">Glossary</a>
+    <span class="sep">·</span>
+    <a href="https://github.com/ESMP-FUN/PluginPulse">Source code on GitHub</a>
+  </footer>
 </main>
 
 <div id="toasts" class="toasts" aria-live="polite"></div>

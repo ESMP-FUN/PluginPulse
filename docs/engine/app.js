@@ -15,11 +15,16 @@
   const PULSE_URL = 'https://api.esmp.fun/v2/pulse';
   let pulseCount = null;
 
+  // Counting continues; showing the tally does not. A small number reads worse
+  // than no number at all, so the element stays hidden until it's worth showing
+  // — flip SHOW_COUNTER back on then.
+  const SHOW_COUNTER = false;
+
   function renderCounter(n) {
     if (typeof n !== 'number' || !isFinite(n)) return;
     pulseCount = n;
     const el = $('pulseCounter');
-    if (!el) return;
+    if (!el || !SHOW_COUNTER) return;
     el.textContent = '';
     const strong = document.createElement('strong');
     strong.textContent = n.toLocaleString();
@@ -114,14 +119,77 @@
       contact: $('contact').value.trim(),
       track: $('track').value.trim(),
       checkIntervalHours: $('interval').value ? parseInt($('interval').value, 10) : null,
+      // Null unless the settle-in box is ticked; the hours field then falls back
+      // to the same 18 the rest of PluginPulse uses.
+      holdNewUpdatesHours: $('holdNew').checked
+        ? (parseInt($('holdHours').value, 10) || 18)
+        : null,
       upgrade: $('upgrade').checked,
     };
   }
 
-  function onFile(e) {
-    selectedFile = e.target.files[0] || null;
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' bytes';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  /** Adopt a chosen/dropped file: swap the drop zone for the selected-file row. */
+  function setFile(file) {
     $('previewOut').textContent = '';
-    if (selectedFile) status('Selected ' + selectedFile.name + '.', '');
+    if (!file) return;
+    if (!/\.jar$/i.test(file.name)) {
+      toast({
+        kind: 'err',
+        title: 'That file isn\'t a plugin',
+        lines: [
+          'Plugins are ".jar" files — this one is "' + file.name + '".',
+          'Look in your server\'s plugins folder for the file you want to update.',
+        ],
+      });
+      return;
+    }
+    selectedFile = file;
+    $('fileName').textContent = file.name;
+    $('fileSize').textContent = formatSize(file.size);
+    $('drop').hidden = true;
+    $('fileChip').hidden = false;
+    status('Ready — preview it, or fill in the steps below.', '');
+  }
+
+  function clearFile() {
+    selectedFile = null;
+    $('file').value = '';
+    $('previewOut').textContent = '';
+    $('fileChip').hidden = true;
+    $('drop').hidden = false;
+    status('', '');
+  }
+
+  /** Drag-and-drop onto the zone, with the page-wide default drop suppressed. */
+  function setupDropZone() {
+    const zone = $('drop');
+    const stop = (e) => { e.preventDefault(); e.stopPropagation(); };
+
+    ['dragenter', 'dragover'].forEach((evt) => zone.addEventListener(evt, (e) => {
+      stop(e);
+      zone.classList.add('dragover');
+    }));
+    ['dragleave', 'dragend'].forEach((evt) => zone.addEventListener(evt, (e) => {
+      stop(e);
+      zone.classList.remove('dragover');
+    }));
+    zone.addEventListener('drop', (e) => {
+      stop(e);
+      zone.classList.remove('dragover');
+      const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file) setFile(file);
+    });
+
+    // Without this, dropping slightly off-target makes the browser navigate to
+    // the jar and the page (plus the user's filled-in fields) is lost.
+    ['dragover', 'drop'].forEach((evt) =>
+      window.addEventListener(evt, (e) => { e.preventDefault(); }));
   }
 
   async function fileBytes() {
@@ -138,14 +206,14 @@
       const info = await window.PPInjector.inspectJar(await fileBytes());
       const authors = info.authors && info.authors.length ? info.authors.join(', ') : 'not listed in the jar';
       $('previewOut').textContent =
-        'Plugin      : ' + (info.name || '(name not in descriptor)') + '\n' +
-        'Version     : ' + (info.version || '(not listed)') + '\n' +
-        'Author(s)   : ' + authors + '\n' +
-        'Main class  : ' + info.main + '\n' +
-        'Descriptor  : ' + info.descriptor + '\n' +
-        'Updatable by this tool : Yes' +
-        (info.finalMain ? '\nNote        : main class is final (typical for Kotlin) — the tool clears that flag so the updater can attach' : '') +
-        (info.alreadyInjected ? '\nAlready has PluginPulse : Yes' : '');
+        'Plugin           : ' + (info.name || '(no name listed inside the jar)') + '\n' +
+        'Version          : ' + (info.version || '(not listed)') + '\n' +
+        'Author(s)        : ' + authors + '\n' +
+        'Can be updated   : Yes' +
+        (info.finalMain
+          ? '\nNote             : this plugin needs a small adjustment first — the tool does it for you'
+          : '') +
+        (info.alreadyInjected ? '\nAlready has updates: Yes' : '');
 
       if (info.alreadyInjected) {
         status('This jar already has PluginPulse.', 'warn');
@@ -153,7 +221,8 @@
           kind: 'warn',
           title: 'This jar already has PluginPulse',
           lines: [
-            'To change its update settings, tick "Re-inject a jar that already has PluginPulse" in step 3, then Generate.',
+            'To change its update settings, open Advanced settings in step 3, tick "This jar already has '
+              + 'PluginPulse — change its settings", then Generate.',
           ],
         });
       } else {
@@ -246,7 +315,9 @@
   }
 
   window.addEventListener('DOMContentLoaded', () => {
-    $('file').addEventListener('change', onFile);
+    $('file').addEventListener('change', (e) => setFile(e.target.files[0] || null));
+    $('clearFile').addEventListener('click', clearFile);
+    setupDropZone();
     $('preview').addEventListener('click', preview);
     $('generate').addEventListener('click', generate);
     setupPriorities();
