@@ -15,6 +15,9 @@ import java.util.Map;
  * @param restartRequired whether the publisher flagged this update as needing a
  *                        full restart (defaults to true when unknown)
  * @param releasePageUrl  human-facing page for this release; may be null
+ * @param publishedEpochMs when the release was published, in epoch milliseconds,
+ *                        or -1 when the source doesn't say. Feeds the
+ *                        "let a release settle first" hold in {@link Updater}.
  */
 public record UpdateInfo(
         String version,
@@ -24,10 +27,20 @@ public record UpdateInfo(
         Map<String, String> hashes,
         long sizeBytes,
         boolean restartRequired,
-        String releasePageUrl
+        String releasePageUrl,
+        long publishedEpochMs
 ) {
     public UpdateInfo {
         hashes = hashes == null ? Map.of() : Map.copyOf(hashes);
         changelog = changelog == null ? "" : changelog;
+        if (publishedEpochMs <= 0) publishedEpochMs = -1L;
+    }
+
+    /** Without a publication time — the source doesn't publish one. */
+    public UpdateInfo(String version, String changelog, String downloadUrl, String fileName,
+                      Map<String, String> hashes, long sizeBytes, boolean restartRequired,
+                      String releasePageUrl) {
+        this(version, changelog, downloadUrl, fileName, hashes, sizeBytes, restartRequired,
+                releasePageUrl, -1L);
     }
 }

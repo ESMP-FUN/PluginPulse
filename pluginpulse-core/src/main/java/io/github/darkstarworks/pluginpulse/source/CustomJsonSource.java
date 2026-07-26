@@ -20,6 +20,7 @@ import java.util.Map;
  *   "sha256": "…", "sha512": "…",       // any subset
  *   "size": 123456,
  *   "restart-required": true,
+ *   "published": "2026-07-20T10:15:30Z",  // when it went live; ISO-8601 or epoch ms
  *   "page": "https://example.com/plugin",
  *   "tracks": { "mc26": { ...same fields, override per track... } }
  * }
@@ -87,7 +88,8 @@ public final class CustomJsonSource implements UpdateSource {
                 hashes,
                 effective.has("size") ? effective.get("size").getAsLong() : -1,
                 !effective.has("restart-required") || effective.get("restart-required").getAsBoolean(),
-                optString(effective, "page")
+                optString(effective, "page"),
+                PublishTime.from(effective, "published", "date_published")
         );
     }
 

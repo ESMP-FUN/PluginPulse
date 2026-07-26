@@ -71,7 +71,8 @@ public final class HangarSource implements UpdateSource {
         String pageUrl = author != null
                 ? "https://hangar.papermc.io/" + author + "/" + projectSlug
                 : "https://hangar.papermc.io/projects/" + projectSlug;
-        return new UpdateInfo(version, changelog, downloadUrl, fileName, hashes, size, true, pageUrl);
+        return new UpdateInfo(version, changelog, downloadUrl, fileName, hashes, size, true, pageUrl,
+                PublishTime.from(v, "createdAt"));
     }
 
     @Override

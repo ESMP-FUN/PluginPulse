@@ -54,9 +54,15 @@ public final class UpdateSubcommand {
             case "apply", "reload" -> updater.applyNow(sender);
             case "status" -> {
                 UpdateInfo pending = updater.pendingUpdate();
-                sender.sendMessage(pending != null
-                        ? "Update available: " + pending.version() + " (current: " + updater.currentVersion() + ")"
-                        : "Up to date (" + updater.currentVersion() + ") as of the last check.");
+                String held = updater.holdNotice();
+                if (pending != null) {
+                    sender.sendMessage("Update available: " + pending.version()
+                            + " (current: " + updater.currentVersion() + ")");
+                } else if (held != null) {
+                    sender.sendMessage("Waiting: " + held);
+                } else {
+                    sender.sendMessage("Up to date (" + updater.currentVersion() + ") as of the last check.");
+                }
             }
             default -> sender.sendMessage(
                     "Unknown update action. Try: check, download, ignore <v>, unignore <v>, restore, status");

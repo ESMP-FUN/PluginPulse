@@ -42,8 +42,11 @@ plugins:
     jenkins-artifact: "Paper"     # which jar, when a build ships several
     mode: notify
 user-agent-contact: "you@example.com"   # required by Modrinth's API rules
-check-interval-hours: 6[/CODE]
+check-interval-hours: 6
+hold-new-updates: false      # true = leave a release alone until it has been out
+hold-new-updates-hours: 18   # for this long (see below)[/CODE]
 Edit, then [ICODE]/pluginpulse reload[/ICODE]. That's the whole setup.
+[B]Waiting out brand-new releases:[/B] sometimes an author publishes an update that turns out to be broken and puts out a fix a few hours later. Switch on [ICODE]hold-new-updates[/ICODE] and PluginPulse ignores a release until it has been publicly available for [ICODE]hold-new-updates-hours[/ICODE] (18 by default), so those quick fix-ups land before your server takes the update. It uses the release date from the plugin's own page, so the clock starts when the author released it — not when your server first noticed. The wait covers the notices, the downloads and the automatic installs; [ICODE]/pluginpulse download <plugin>[/ICODE] still installs one right away, and [ICODE]/pluginpulse[/ICODE] shows what is being waited out and for how much longer. Both keys can also be set on a single plugin's entry.
 [CENTER][SIZE=3][COLOR=#808080]
 ——————————————————————————————
 [/COLOR][/SIZE][/CENTER]

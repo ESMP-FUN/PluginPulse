@@ -90,6 +90,10 @@ public final class InjectCli implements Callable<Integer> {
         String track;
         @Option(names = "--check-interval-hours", description = "Hours between checks (default library value).")
         Integer checkIntervalHours;
+        @Option(names = "--hold-new-updates-hours", description = "Ignore a release until it has been "
+                + "publicly available for this many hours (off unless given; 18 is a sensible value), so a "
+                + "release that gets hotfixed within hours is never installed.")
+        Integer holdNewUpdatesHours;
         @Option(names = "--upgrade", description = "Re-inject a jar that already contains PluginPulse.")
         boolean upgrade;
         @Option(names = "--hot-reload", description = "Enable no-restart installs (needs the hotreload module "
@@ -104,7 +108,8 @@ public final class InjectCli implements Callable<Integer> {
             }
             Path out = output != null ? output : defaultOutput(input);
             InjectOptions options = new InjectOptions(modrinth, github, hangar, permission, commandRoot,
-                    mode, contact, track, checkIntervalHours, upgrade, githubToken, hotReload);
+                    mode, contact, track, checkIntervalHours, upgrade, githubToken, hotReload,
+                    holdNewUpdatesHours);
             try {
                 Injector.Result result = new Injector().inject(input, out, options);
                 System.out.println("Injected " + result.main() + " via " + result.strategy() + ".");

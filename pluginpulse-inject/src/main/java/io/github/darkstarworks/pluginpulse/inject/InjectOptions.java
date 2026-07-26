@@ -16,7 +16,8 @@ public record InjectOptions(
         Integer checkIntervalHours,
         boolean upgrade,
         String githubToken,
-        boolean hotReload) {
+        boolean hotReload,
+        Integer holdNewUpdatesHours) {
 
     boolean hasSource() {
         return notBlank(modrinth) || notBlank(github) || notBlank(hangar);

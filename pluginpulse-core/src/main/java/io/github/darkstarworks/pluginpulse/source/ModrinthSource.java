@@ -118,7 +118,8 @@ public final class ModrinthSource implements UpdateSource {
                 hashes,
                 size,
                 true,
-                "https://modrinth.com/project/" + projectSlug + "/version/" + versionId
+                "https://modrinth.com/project/" + projectSlug + "/version/" + versionId,
+                PublishTime.from(chosen, "date_published")
         );
     }
 

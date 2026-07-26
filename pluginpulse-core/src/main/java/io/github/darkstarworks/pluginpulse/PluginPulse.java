@@ -43,8 +43,9 @@ public final class PluginPulse {
 
     /**
      * Read {@code pluginpulse.yml} from the plugin jar, build an {@link Updater}
-     * and start it. Server owners can override {@code mode} and
-     * {@code check-interval-hours} via an {@code update:} section in the host
+     * and start it. Server owners can override {@code mode},
+     * {@code check-interval-hours}, {@code hold-new-updates} and
+     * {@code hold-new-updates-hours} via an {@code update:} section in the host
      * plugin's own {@code config.yml}.
      *
      * @return the started updater, or {@code null} if disabled/misconfigured
@@ -73,9 +74,16 @@ public final class PluginPulse {
             // mode + interval: pluginpulse.yml defaults, overridable by the host's config.yml update.* keys.
             String modeName = cfg.getString("mode", "notify");
             long intervalHours = cfg.getLong("check-interval-hours", 6L);
+            // Optional settle-in wait: leave a brand-new release alone until it has
+            // been out this long, so a broken release that gets hotfixed within
+            // hours is never installed here. Off unless switched on.
+            boolean holdNew = cfg.getBoolean("hold-new-updates", false);
+            long holdHours = cfg.getLong("hold-new-updates-hours", 18L);
             if (plugin.getConfig().isConfigurationSection("update")) {
                 modeName = plugin.getConfig().getString("update.mode", modeName);
                 intervalHours = plugin.getConfig().getLong("update.check-interval-hours", intervalHours);
+                holdNew = plugin.getConfig().getBoolean("update.hold-new-updates", holdNew);
+                holdHours = plugin.getConfig().getLong("update.hold-new-updates-hours", holdHours);
             }
             if ("off".equalsIgnoreCase(modeName)) {
                 return null;
@@ -83,7 +91,8 @@ public final class PluginPulse {
 
             Updater.Builder builder = Updater.builder(plugin)
                     .mode(parseMode(modeName))
-                    .checkInterval(Duration.ofHours(Math.max(1L, intervalHours)));
+                    .checkInterval(Duration.ofHours(Math.max(1L, intervalHours)))
+                    .minimumReleaseAge(holdNew ? Duration.ofHours(Math.max(1L, holdHours)) : Duration.ZERO);
 
             // First declared source is primary; the rest are ordered fallbacks.
             // The order is taken from the optional "source-order" list when present

@@ -85,6 +85,9 @@ command-root: /myplugin          # enables clickable buttons; self-registered if
 user-agent-contact: you@example.com   # required by Modrinth's API rules
 mode: notify                     # off | check-only | notify | download | auto-stage
 check-interval-hours: 6
+# hold-new-updates: false        # true = ignore a release until it has been publicly
+# hold-new-updates-hours: 18     # available for this long, so a broken release that
+#                                # gets hotfixed hours later is never installed
 # track: mc26                    # optional: follow a "-<track>" release line
 # self-register-command: true    # default true; see below
 ```
@@ -113,8 +116,24 @@ if — and only if — that name is not already taken. So:
 Registration is fail-soft across Spigot/Paper/Folia and never throws into your
 lifecycle; set `self-register-command: false` to opt out.
 
-That's it. Server owners can override `mode` and `check-interval-hours` from an
-`update:` section in your plugin's own `config.yml` without you doing anything.
+That's it. Server owners can override `mode`, `check-interval-hours`,
+`hold-new-updates` and `hold-new-updates-hours` from an `update:` section in your
+plugin's own `config.yml` without you doing anything.
+
+### Letting releases settle first
+
+`hold-new-updates` makes the updater ignore a release until it has been publicly
+available for `hold-new-updates-hours` (default 18). It exists for the case where
+a publisher ships a broken release and hotfixes it a few hours later: a server
+that waits never installs the broken one, instead of picking it up and then
+sitting on it until the next check.
+
+The clock is the publisher's own release timestamp — Modrinth, GitHub, Hangar and
+Jenkins all report one — falling back to the first time this server saw the
+version, which can only lengthen the wait, never shorten it. The hold suppresses
+notices, downloads and auto-staging alike; an admin running `update download` by
+hand still gets the release immediately, and `update status` explains what is
+being held and for how much longer.
 
 ## Advanced usage (builder)
 

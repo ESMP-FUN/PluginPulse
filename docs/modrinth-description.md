@@ -75,9 +75,25 @@ plugins:
 
 user-agent-contact: "you@example.com"   # required by Modrinth's API rules
 check-interval-hours: 6
+hold-new-updates: false      # true = leave a release alone until it has been out
+hold-new-updates-hours: 18   # for this long (see below)
 ```
 
 Edit, then `/pluginpulse reload`. That's the whole setup.
+
+### Waiting out brand-new releases
+
+Sometimes an author publishes an update that turns out to be broken and puts out
+a fix a few hours later. Switch on `hold-new-updates` and PluginPulse ignores a
+release until it has been publicly available for `hold-new-updates-hours` (18 by
+default), so those quick fix-ups land before your server takes the update. It
+uses the release date from the plugin's own page, so the clock starts when the
+author released it — not when your server first noticed.
+
+The wait covers the notices, the downloads and the automatic installs. You are
+never locked out: `/pluginpulse download <plugin>` installs it right away, and
+`/pluginpulse` shows what is being waited out and for how much longer. Both keys
+can also be set on a single plugin's entry.
 
 ### Update sources
 

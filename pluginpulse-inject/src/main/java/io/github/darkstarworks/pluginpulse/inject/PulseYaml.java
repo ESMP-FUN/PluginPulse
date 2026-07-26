@@ -21,6 +21,11 @@ final class PulseYaml {
             sb.append("user-agent-contact: \"").append(o.userAgentContact()).append("\"\n");
         sb.append("mode: ").append(InjectOptions.notBlank(o.mode()) ? o.mode() : "notify").append('\n');
         if (o.checkIntervalHours() != null) sb.append("check-interval-hours: ").append(o.checkIntervalHours()).append('\n');
+        // Settle-in wait: only written when asked for, so the library default (off) stands otherwise.
+        if (o.holdNewUpdatesHours() != null) {
+            sb.append("hold-new-updates: true\n")
+                    .append("hold-new-updates-hours: ").append(o.holdNewUpdatesHours()).append('\n');
+        }
         if (InjectOptions.notBlank(o.track())) sb.append("track: ").append(o.track()).append('\n');
         if (o.hotReload()) sb.append("hot-reload: true\n");
         return sb.toString();

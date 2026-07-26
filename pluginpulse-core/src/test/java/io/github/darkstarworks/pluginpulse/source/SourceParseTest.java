@@ -3,6 +3,8 @@ package io.github.darkstarworks.pluginpulse.source;
 import io.github.darkstarworks.pluginpulse.UpdateInfo;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -19,6 +21,7 @@ class SourceParseTest {
               {
                 "id": "abc123",
                 "version_number": "1.7.3",
+                "date_published": "2026-07-20T10:15:30.123456Z",
                 "changelog": "Fixed vault bug",
                 "files": [
                   {"url": "https://cdn.modrinth.com/data/x/versions/abc123/plugin-1.7.3.jar",
@@ -47,6 +50,15 @@ class SourceParseTest {
         assertEquals(123456, info.sizeBytes());
         assertEquals("Fixed vault bug", info.changelog());
         assertTrue(info.releasePageUrl().contains("myplugin/version/abc123"));
+        assertEquals(Instant.parse("2026-07-20T10:15:30.123456Z").toEpochMilli(), info.publishedEpochMs());
+    }
+
+    @Test
+    void missingPublicationTimeIsUnknownNotZero() {
+        // Every source that can't say when a release went out must report -1, so
+        // the settle-in hold falls back to "first time this server saw it".
+        UpdateInfo info = ModrinthSource.parse(MODRINTH_DUAL_TRACK_JSON, null, "p");
+        assertEquals(-1L, info.publishedEpochMs());
     }
 
     private static final String MODRINTH_DUAL_TRACK_JSON = """
@@ -94,6 +106,7 @@ class SourceParseTest {
               {"draft": false, "prerelease": false, "tag_name": "v1.7.3",
                "html_url": "https://github.com/o/r/releases/tag/v1.7.3",
                "body": "master build",
+               "created_at": "2026-07-19T08:00:00Z", "published_at": "2026-07-20T09:30:00Z",
                "assets": [
                  {"name": "plugin-1.7.3.jar", "size": 222,
                   "browser_download_url": "https://github.com/o/r/releases/download/v1.7.3/plugin-1.7.3.jar"},
@@ -117,6 +130,8 @@ class SourceParseTest {
         assertTrue(parsed.info().hashes().isEmpty());
         assertNotNull(parsed.sha256SidecarUrl());
         assertTrue(parsed.sha256SidecarUrl().endsWith(".sha256"));
+        // published_at wins over the tag's created_at.
+        assertEquals(Instant.parse("2026-07-20T09:30:00Z").toEpochMilli(), parsed.info().publishedEpochMs());
     }
 
     @Test
@@ -134,6 +149,7 @@ class SourceParseTest {
     private static final String HANGAR_JSON = """
             {
               "name": "5.10.0",
+              "createdAt": "2026-07-20T09:30:00.123456Z",
               "description": "release notes here",
               "author": "kennytv",
               "downloads": {
@@ -155,6 +171,7 @@ class SourceParseTest {
         assertEquals("e5a63f", info.hashes().get("sha256"));
         assertEquals(6434343, info.sizeBytes());
         assertEquals("https://hangar.papermc.io/kennytv/ViaVersion", info.releasePageUrl());
+        assertEquals(Instant.parse("2026-07-20T09:30:00.123456Z").toEpochMilli(), info.publishedEpochMs());
         assertTrue(info.downloadUrl().startsWith("https://hangarcdn.papermc.io/"));
     }
 
@@ -167,7 +184,7 @@ class SourceParseTest {
               {"fileName":"FastAsyncWorldEdit-Bukkit-2.15.3-SNAPSHOT-1348.jar","relativePath":"artifacts/FastAsyncWorldEdit-Bukkit-2.15.3-SNAPSHOT-1348.jar"},
               {"fileName":"FastAsyncWorldEdit-CLI-2.15.3-SNAPSHOT-1348.jar","relativePath":"artifacts/FastAsyncWorldEdit-CLI-2.15.3-SNAPSHOT-1348.jar"},
               {"fileName":"FastAsyncWorldEdit-Paper-2.15.3-SNAPSHOT-1348.jar","relativePath":"artifacts/FastAsyncWorldEdit-Paper-2.15.3-SNAPSHOT-1348.jar"}],
-             "number":1348,"result":"SUCCESS",
+             "number":1348,"result":"SUCCESS","timestamp":1784937600000,
              "url":"https://ci.athion.net/job/FastAsyncWorldEdit/1348/"}
             """;
 
@@ -190,6 +207,8 @@ class SourceParseTest {
         assertTrue(info.hashes().isEmpty());
         assertTrue(info.restartRequired());
         assertEquals("https://ci.athion.net/job/FastAsyncWorldEdit/1348/", info.releasePageUrl());
+        // Jenkins reports the build time in epoch milliseconds already.
+        assertEquals(1784937600000L, info.publishedEpochMs());
     }
 
     @Test
@@ -265,6 +284,7 @@ class SourceParseTest {
               "sha256": "ABCDEF",
               "size": 999,
               "restart-required": false,
+              "published": "2026-07-20T09:30:00Z",
               "page": "https://esmp.fun/plugins",
               "tracks": {
                 "mc26": {"version": "1.0.4-mc26", "download": "https://esmp.fun/dl/ws-1.0.4-mc26.jar",
@@ -281,6 +301,18 @@ class SourceParseTest {
         assertEquals(999, info.sizeBytes());
         assertFalse(info.restartRequired());
         assertEquals("https://esmp.fun/plugins", info.releasePageUrl());
+        assertEquals(Instant.parse("2026-07-20T09:30:00Z").toEpochMilli(), info.publishedEpochMs());
+    }
+
+    @Test
+    void publishTimeAcceptsBothIsoAndEpochMillis() {
+        long expected = Instant.parse("2026-07-20T09:30:00Z").toEpochMilli();
+        assertEquals(expected, PublishTime.parse("2026-07-20T09:30:00Z"));
+        assertEquals(expected, PublishTime.parse("2026-07-20T11:30:00+02:00"));
+        assertEquals(expected, PublishTime.parse(Long.toString(expected)));
+        assertEquals(PublishTime.UNKNOWN, PublishTime.parse("last tuesday"));
+        assertEquals(PublishTime.UNKNOWN, PublishTime.parse(""));
+        assertEquals(PublishTime.UNKNOWN, PublishTime.parse(null));
     }
 
     @Test

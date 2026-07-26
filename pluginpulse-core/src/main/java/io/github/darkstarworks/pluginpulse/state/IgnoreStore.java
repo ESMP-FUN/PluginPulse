@@ -32,6 +32,7 @@ public final class IgnoreStore {
     private final Set<String> ignoredVersions = new HashSet<>();
     private long lastCheckEpochMs;
     private String lastKnownLatest;
+    private long firstSeenEpochMs;
 
     public IgnoreStore(Path file, Logger logger) {
         this.file = file;
@@ -51,6 +52,7 @@ public final class IgnoreStore {
             if (root.has("lastKnownLatest") && !root.get("lastKnownLatest").isJsonNull()) {
                 lastKnownLatest = root.get("lastKnownLatest").getAsString();
             }
+            if (root.has("firstSeenEpochMs")) firstSeenEpochMs = root.get("firstSeenEpochMs").getAsLong();
         } catch (Exception e) {
             logger.log(Level.WARNING, "Could not read updater state " + file + ": " + e.getMessage());
         }
@@ -65,6 +67,7 @@ public final class IgnoreStore {
             root.add("ignoredVersions", arr);
             root.addProperty("lastCheckEpochMs", lastCheckEpochMs);
             root.addProperty("lastKnownLatest", lastKnownLatest);
+            root.addProperty("firstSeenEpochMs", firstSeenEpochMs);
             Files.writeString(file, GSON.toJson(root));
         } catch (IOException e) {
             logger.log(Level.WARNING, "Could not write updater state " + file + ": " + e.getMessage());
@@ -93,8 +96,20 @@ public final class IgnoreStore {
         return lastKnownLatest;
     }
 
+    /**
+     * When {@link #lastKnownLatest()} was first seen by this server, or 0 when
+     * unknown. Stands in for the publisher's release time when a source doesn't
+     * publish one, so the "let a release settle first" hold still has a clock.
+     */
+    public synchronized long firstSeenEpochMs() {
+        return firstSeenEpochMs;
+    }
+
     public synchronized void recordCheck(String latestVersion) {
         this.lastCheckEpochMs = System.currentTimeMillis();
+        if (latestVersion != null && !latestVersion.equalsIgnoreCase(lastKnownLatest)) {
+            this.firstSeenEpochMs = this.lastCheckEpochMs;
+        }
         this.lastKnownLatest = latestVersion;
         save();
     }

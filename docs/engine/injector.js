@@ -8,7 +8,8 @@
  *
  * injectJar(jarBytes, opts, assets) -> Promise<Uint8Array>
  *   opts   : { modrinth, github, hangar, jenkins, jenkinsArtifact, permission,
- *              commandRoot, mode, contact, track, checkIntervalHours, upgrade }
+ *              commandRoot, mode, contact, track, checkIntervalHours,
+ *              holdNewUpdatesHours, upgrade }
  *   assets : { coreJar: Uint8Array, wrapperTemplate: Uint8Array }
  *
  * Requires JSZip (global) and PPClass (constant-pool.js).
@@ -74,6 +75,11 @@
     if (o.contact) lines.push('user-agent-contact: "' + o.contact + '"');
     lines.push('mode: ' + (o.mode || 'notify'));
     if (o.checkIntervalHours) lines.push('check-interval-hours: ' + o.checkIntervalHours);
+    // Settle-in wait: only written when asked for, so the library default (off) stands otherwise.
+    if (o.holdNewUpdatesHours) {
+      lines.push('hold-new-updates: true');
+      lines.push('hold-new-updates-hours: ' + o.holdNewUpdatesHours);
+    }
     if (o.track) lines.push('track: ' + o.track);
     return lines.join('\n') + '\n';
   }

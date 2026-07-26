@@ -4,12 +4,25 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Companion plugin — PluginPulse docs</title>
+  <meta name="description" content="The PluginPulse companion plugin checks, downloads and installs updates for the plugins you already run — one config file, no changes to the plugins themselves.">
+  <link rel="canonical" href="https://esmp-fun.github.io/PluginPulse/companion-plugin/">
+  <link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#0f1216">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="PluginPulse">
+  <meta property="og:title" content="Keep every plugin on your server up to date">
+  <meta property="og:description" content="The PluginPulse companion plugin checks, downloads and installs updates for the plugins you already run — one config file, no changes to the plugins themselves.">
+  <meta property="og:url" content="https://esmp-fun.github.io/PluginPulse/companion-plugin/">
+  <meta property="og:image" content="https://esmp-fun.github.io/PluginPulse/assets/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="stylesheet" href="../docs.css">
 </head>
 <body>
 <div class="layout">
   <aside class="sidebar">
-    <a class="brand" href="../">Plugin<span>Pulse</span></a>
+    <a class="brand" href="../"><img src="../assets/icon.svg" alt="" width="24" height="24"><span class="wordmark">Plugin<span>Pulse</span></span></a>
     <p class="brand-sub">Auto-updates for Minecraft plugins</p>
     <nav>
       <div class="nav-group">
@@ -85,7 +98,11 @@
 user-agent-contact: "you@example.com"
 
 # How often to check each plugin, in hours (minimum 1).
-check-interval-hours: 6</code></pre>
+check-interval-hours: 6
+
+# Give brand-new releases time to settle before touching them.
+hold-new-updates: false
+hold-new-updates-hours: 18</code></pre>
 
     <p><strong>Every field explained:</strong></p>
     <table>
@@ -99,8 +116,26 @@ check-interval-hours: 6</code></pre>
         <tr><td><code>track</code></td><td><em>(optional, per plugin)</em> follow a <code>-&lt;track&gt;</code> release line, e.g. <code>track: mc26</code></td></tr>
         <tr><td><code>user-agent-contact</code></td><td>how the update APIs can reach you; required by Modrinth</td></tr>
         <tr><td><code>check-interval-hours</code></td><td>how often to check (minimum 1)</td></tr>
+        <tr><td><code>hold-new-updates</code></td>
+            <td><code>true</code> to leave a release alone until it has been out a while (see below).
+              Default <code>false</code>. Can also be set per plugin</td></tr>
+        <tr><td><code>hold-new-updates-hours</code></td>
+            <td>how long that wait is, in hours (minimum 1). Default 18. Can also be set per plugin</td></tr>
       </tbody>
     </table>
+
+    <h3>Waiting out brand-new releases</h3>
+    <p>Sometimes an author publishes an update that turns out to be broken and puts out a fix a few
+      hours later. If your server picked up the broken one in the meantime, you are stuck with it
+      until the next check comes round.</p>
+    <p>Switch on <code>hold-new-updates</code> and PluginPulse ignores a release until it has been
+      publicly available for <code>hold-new-updates-hours</code> (18 by default) — long enough that a
+      quick fix-up release lands first. It uses the release date the plugin's own page publishes, so
+      the clock starts when the author released it, not when your server first noticed.</p>
+    <p>The wait covers everything PluginPulse does on its own: the notices to admins, the downloads
+      and the automatic installs. You are never locked out — <code>/pluginpulse download &lt;plugin&gt;</code>
+      installs the new version straight away, and <code>/pluginpulse</code> shows which releases are
+      being waited out and for how much longer.</p>
 
     <p><strong>What each <code>mode</code> does</strong> — in plain terms:</p>
     <ul>

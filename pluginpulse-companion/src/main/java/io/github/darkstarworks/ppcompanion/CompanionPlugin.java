@@ -44,6 +44,9 @@ public final class CompanionPlugin extends JavaPlugin {
         saveDefaultConfig();
         String contact = getConfig().getString("user-agent-contact", "").trim();
         long intervalHours = Math.max(1L, getConfig().getLong("check-interval-hours", 6L));
+        // Server-wide settle-in wait; each entry may override both keys.
+        boolean holdNew = getConfig().getBoolean("hold-new-updates", false);
+        long holdHours = Math.max(1L, getConfig().getLong("hold-new-updates-hours", 18L));
 
         ConfigurationSection plugins = getConfig().getConfigurationSection("plugins");
         if (plugins == null || plugins.getKeys(false).isEmpty()) {
@@ -56,7 +59,7 @@ public final class CompanionPlugin extends JavaPlugin {
                 skipped.put(name, "malformed config entry");
                 continue;
             }
-            startTarget(name, entry, contact, intervalHours);
+            startTarget(name, entry, new Defaults(contact, intervalHours, holdNew, holdHours));
         }
         getLogger().info("Managing " + updaters.size() + " plugin(s); "
                 + skipped.size() + " skipped.");
@@ -67,7 +70,11 @@ public final class CompanionPlugin extends JavaPlugin {
         stopAll();
     }
 
-    private void startTarget(String name, ConfigurationSection entry, String contact, long intervalHours) {
+    /** The top-level config values every entry starts from before its own overrides. */
+    private record Defaults(String contact, long intervalHours, boolean holdNew, long holdHours) {
+    }
+
+    private void startTarget(String name, ConfigurationSection entry, Defaults defaults) {
         Plugin target = getServer().getPluginManager().getPlugin(name);
         if (target == null) {
             skipped.put(name, "not installed");
@@ -109,10 +116,16 @@ public final class CompanionPlugin extends JavaPlugin {
             return;
         }
 
+        // Wait out a brand-new release before acting on it, unless this entry says
+        // otherwise. Both keys fall back to the top-level values.
+        boolean holdNew = entry.getBoolean("hold-new-updates", defaults.holdNew());
+        long holdHours = Math.max(1L, entry.getLong("hold-new-updates-hours", defaults.holdHours()));
+
         try {
             Updater.Builder builder = Updater.builder(jp)
                     .mode(mode)
-                    .checkInterval(Duration.ofHours(intervalHours))
+                    .checkInterval(Duration.ofHours(defaults.intervalHours()))
+                    .minimumReleaseAge(holdNew ? Duration.ofHours(holdHours) : Duration.ZERO)
                     // The companion owns the /pluginpulse command; don't have each
                     // target self-register one of its own.
                     .selfRegisterCommand(false)
@@ -122,7 +135,7 @@ public final class CompanionPlugin extends JavaPlugin {
             // First declared source primary, rest fallbacks.
             builder.source(sources.get(0));
             for (int i = 1; i < sources.size(); i++) builder.fallbackSource(sources.get(i));
-            if (!contact.isEmpty()) builder.userAgentContact(contact);
+            if (!defaults.contact().isEmpty()) builder.userAgentContact(defaults.contact());
             String track = trimToNull(entry.getString("track"));
             if (track != null) builder.track(track);
             if (entry.contains("require-hash")) {
@@ -215,10 +228,16 @@ public final class CompanionPlugin extends JavaPlugin {
         sender.sendMessage("PluginPulse Companion — managing " + updaters.size() + " plugin(s):");
         updaters.forEach((name, updater) -> {
             var pending = updater.pendingUpdate();
-            String line = pending != null
-                    ? name + ": update available " + pending.version()
-                        + " (running " + updater.currentVersion() + ")"
-                    : name + ": up to date (" + updater.currentVersion() + ")";
+            String held = updater.holdNotice();
+            String line;
+            if (pending != null) {
+                line = name + ": update available " + pending.version()
+                        + " (running " + updater.currentVersion() + ")";
+            } else if (held != null) {
+                line = name + ": waiting — " + held;
+            } else {
+                line = name + ": up to date (" + updater.currentVersion() + ")";
+            }
             sender.sendMessage(" - " + line);
         });
         if (!skipped.isEmpty()) {

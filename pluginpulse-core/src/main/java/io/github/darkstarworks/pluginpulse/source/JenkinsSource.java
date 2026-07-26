@@ -69,7 +69,7 @@ public final class JenkinsSource implements UpdateSource {
     @Override
     public UpdateInfo fetchLatest(SourceContext ctx) throws Exception {
         String json = ctx.http().get(jobUrl
-                + "/lastSuccessfulBuild/api/json?tree=number,url,result,artifacts[fileName,relativePath]");
+                + "/lastSuccessfulBuild/api/json?tree=number,url,result,timestamp,artifacts[fileName,relativePath]");
         UpdateInfo info = parse(json, artifactFilter);
         if (info == null) {
             throw new IllegalStateException("Jenkins job " + jobUrl
@@ -115,7 +115,9 @@ public final class JenkinsSource implements UpdateSource {
         String downloadUrl = buildUrl + "artifact/" + encodePath(artifact.get("relativePath").getAsString());
         String version = deriveVersion(fileName, build.get("number").getAsLong());
         // No checksums and always a restart: CI builds carry no publisher metadata.
-        return new UpdateInfo(version, "", downloadUrl, fileName, Map.of(), -1, true, buildUrl);
+        // Jenkins does report when the build ran, in epoch milliseconds.
+        return new UpdateInfo(version, "", downloadUrl, fileName, Map.of(), -1, true, buildUrl,
+                PublishTime.from(build, "timestamp"));
     }
 
     /**

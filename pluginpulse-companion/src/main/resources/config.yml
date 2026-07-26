@@ -54,6 +54,10 @@ plugins:
 #                  unsafe (Folia, other plugins depend on it, or it bundles a
 #                  native library such as the SQLite driver) and falls back to a
 #                  restart-install. Default false.
+#   hold-new-updates / hold-new-updates-hours
+#                — the waiting time below, but set for this one plugin only.
+#                  Handy to wait longer on a plugin that has broken your server
+#                  before, or not at all on one you trust.
 
 # Contact string sent with API requests. Modrinth's API rules require a way to
 # reach you (an email or a project/website URL).
@@ -61,3 +65,25 @@ user-agent-contact: "you@example.com"
 
 # How often to check each plugin, in hours (minimum 1).
 check-interval-hours: 6
+
+# Give brand-new releases time to settle before touching them.
+#
+# Sometimes an author publishes an update that turns out to be broken and puts
+# out a fix a few hours later. With this switched on, PluginPulse ignores a
+# release until it has been publicly available for the number of hours below, so
+# those quick fix-ups land BEFORE your server takes the update — instead of you
+# installing the broken one and then waiting for the next check to fix it.
+#
+# false = take updates as soon as they appear (how PluginPulse has always worked)
+# true  = leave a release alone until it has been out for the hours below
+#
+# It applies to everything PluginPulse does on its own: the notices to admins,
+# the downloads and the automatic installs. You are never locked out — running
+# the download command yourself installs the new version straight away, and
+# /pluginpulse tells you when a release is being waited out and how much longer.
+hold-new-updates: false
+
+# How long a release has to have been out before PluginPulse will take it, in
+# hours (minimum 1). Only used when hold-new-updates is true. 18 hours means a
+# release published in the evening is taken the following afternoon.
+hold-new-updates-hours: 18

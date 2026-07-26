@@ -4,12 +4,25 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Adopting the library — PluginPulse docs</title>
+  <meta name="description" content="Add self-updating to your Paper/Spigot plugin: shade PluginPulse, drop in a pluginpulse.yml, and call one method from onEnable.">
+  <link rel="canonical" href="https://esmp-fun.github.io/PluginPulse/adopting-the-library/">
+  <link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#0f1216">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="PluginPulse">
+  <meta property="og:title" content="Make your own plugin update itself">
+  <meta property="og:description" content="Add self-updating to your Paper/Spigot plugin: shade PluginPulse, drop in a pluginpulse.yml, and call one method from onEnable.">
+  <meta property="og:url" content="https://esmp-fun.github.io/PluginPulse/adopting-the-library/">
+  <meta property="og:image" content="https://esmp-fun.github.io/PluginPulse/assets/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="stylesheet" href="../docs.css">
 </head>
 <body>
 <div class="layout">
   <aside class="sidebar">
-    <a class="brand" href="../">Plugin<span>Pulse</span></a>
+    <a class="brand" href="../"><img src="../assets/icon.svg" alt="" width="24" height="24"><span class="wordmark">Plugin<span>Pulse</span></span></a>
     <p class="brand-sub">Auto-updates for Minecraft plugins</p>
     <nav>
       <div class="nav-group">
@@ -164,6 +177,9 @@ command-root: /myplugin           # clickable buttons; self-registered if the na
 user-agent-contact: you@example.com   # required by Modrinth's API rules
 mode: notify                      # off | check-only | notify | download | auto-stage
 check-interval-hours: 6
+# hold-new-updates: false         # true = ignore a release until it has been out for
+# hold-new-updates-hours: 18      # this many hours, so an author's own quick fix-up
+#                                 # release lands before the server takes the update
 # track: mc26                     # optional: follow a "-&lt;track&gt;" release line
 # self-register-command: true     # default true
 # github-token: "${GITHUB_TOKEN}" # PRIVATE repo: ${ENV_VAR} ref (recommended) or a
@@ -228,6 +244,7 @@ public final class MyPlugin extends JavaPlugin {
             .fallbackSource(new GitHubReleasesSource("me/my-plugin"))
             .mode(UpdateMode.NOTIFY)
             .checkInterval(Duration.ofHours(6))
+            .minimumReleaseAge(Duration.ofHours(18))   // optional: let releases settle first
             .permission("myplugin.admin")
             .commandRoot("/myplugin")
             .userAgentContact("you@example.com")

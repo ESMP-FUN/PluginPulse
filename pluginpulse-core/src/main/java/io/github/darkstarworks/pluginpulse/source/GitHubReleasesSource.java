@@ -178,7 +178,11 @@ public final class GitHubReleasesSource implements UpdateSource {
                 }
             }
         }
-        UpdateInfo info = new UpdateInfo(version, changelog, downloadUrl, fileName, hashes, size, true, pageUrl);
+        // published_at is when the release went public; created_at is the tag's
+        // own date and only stands in when GitHub omits the former.
+        long published = PublishTime.from(chosen, "published_at", "created_at");
+        UpdateInfo info = new UpdateInfo(version, changelog, downloadUrl, fileName, hashes, size, true,
+                pageUrl, published);
         return new Parsed(info, sidecarUrl, apiAssetUrl);
     }
 
@@ -186,12 +190,14 @@ public final class GitHubReleasesSource implements UpdateSource {
         Map<String, String> hashes = new HashMap<>(info.hashes());
         hashes.put(algo, hex);
         return new UpdateInfo(info.version(), info.changelog(), info.downloadUrl(), info.fileName(),
-                hashes, info.sizeBytes(), info.restartRequired(), info.releasePageUrl());
+                hashes, info.sizeBytes(), info.restartRequired(), info.releasePageUrl(),
+                info.publishedEpochMs());
     }
 
     private static UpdateInfo withDownloadUrl(UpdateInfo info, String downloadUrl) {
         return new UpdateInfo(info.version(), info.changelog(), downloadUrl, info.fileName(),
-                info.hashes(), info.sizeBytes(), info.restartRequired(), info.releasePageUrl());
+                info.hashes(), info.sizeBytes(), info.restartRequired(), info.releasePageUrl(),
+                info.publishedEpochMs());
     }
 
     @Override

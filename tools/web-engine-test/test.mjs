@@ -49,6 +49,7 @@ async function main() {
   const opts = {
     modrinth: 'demo-slug', permission: 'demo.admin', commandRoot: '/demo',
     mode: 'notify', contact: 'me@example.com', checkIntervalHours: 6,
+    holdNewUpdatesHours: 18,
   };
   const out = await PPI.injectJar(jar, opts, assets);
   const zip = await JSZip.loadAsync(out);
@@ -67,6 +68,8 @@ async function main() {
   const pulseYml = await zip.file('pluginpulse.yml').async('string');
   ok(pulseYml.includes('modrinth: demo-slug'), 'pluginpulse.yml carries the source');
   ok(pulseYml.includes('command-root: /demo'), 'pluginpulse.yml carries command-root');
+  ok(pulseYml.includes('hold-new-updates: true') && pulseYml.includes('hold-new-updates-hours: 18'),
+    'pluginpulse.yml carries the settle-in wait');
 
   // Wrapper Utf8 constants fully substituted (no placeholders left).
   const wrapper = await zip.file(pkg + '/DemoPlugin__Pulse.class').async('uint8array');
@@ -110,6 +113,7 @@ async function main() {
   ok(jYml.includes('jenkins-artifact: "Paper"'), 'pluginpulse.yml carries jenkins-artifact regex');
   ok(jYml.includes('require-hash: false'), 'download mode with Jenkins emits require-hash: false');
   ok(!pulseYml.includes('require-hash'), 'non-Jenkins config does not touch require-hash');
+  ok(!jYml.includes('hold-new-updates'), 'settle-in wait is left out when the box is unticked');
 
   console.log(failures === 0 ? '\nALL PASSED' : '\n' + failures + ' FAILED');
   process.exit(failures === 0 ? 0 : 1);

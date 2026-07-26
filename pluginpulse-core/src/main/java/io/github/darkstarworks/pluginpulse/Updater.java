@@ -51,6 +51,7 @@ public final class Updater {
     private final List<UpdateSource> sources;
     private final UpdateMode mode;
     private final Duration checkInterval;
+    private final Duration minimumReleaseAge;
     private final String permission;
     private final String commandRoot;
     private final boolean selfRegisterCommand;
@@ -67,6 +68,10 @@ public final class Updater {
     private final ReloadEngine reloadEngine;
 
     private volatile UpdateInfo pendingUpdate;
+    /** Found, but still settling in — deliberately kept out of {@link #pendingUpdate}. */
+    private volatile UpdateInfo heldUpdate;
+    private volatile long heldUntilEpochMs;
+    private volatile String heldLoggedVersion;
     private volatile UpdateCheckResult lastResult;
     private volatile Map<String, String> downloadHeaders = Map.of();
     private volatile String stagedVersion;
@@ -80,6 +85,7 @@ public final class Updater {
         this.sources = List.copyOf(b.sources);
         this.mode = b.mode;
         this.checkInterval = b.checkInterval;
+        this.minimumReleaseAge = b.minimumReleaseAge;
         this.permission = b.permission;
         this.commandRoot = b.commandRoot;
         this.selfRegisterCommand = b.selfRegisterCommand;
@@ -146,6 +152,7 @@ public final class Updater {
         scheduler.runAsync(() -> runCheck(false, result -> scheduler.runGlobal(() -> {
             switch (result.status()) {
                 case UPDATE_AVAILABLE -> notifier.notifySender(sender, currentVersion, result.info());
+                case HELD -> sender.sendMessage(plugin.getName() + ": " + holdNotice());
                 case IGNORED -> sender.sendMessage(plugin.getName() + ": latest version "
                         + result.info().version() + " is on the ignore list (current: " + currentVersion + ").");
                 case UP_TO_DATE -> sender.sendMessage(plugin.getName() + " is up to date (" + currentVersion + ").");
@@ -192,7 +199,9 @@ public final class Updater {
             sender.sendMessage(plugin.getName() + ": downloads are disabled (mode " + mode + ").");
             return;
         }
-        UpdateInfo info = pendingUpdate;
+        // An admin who types the download command outrides the settle-in wait —
+        // they asked for this version by hand, so give it to them.
+        UpdateInfo info = pendingUpdate != null ? pendingUpdate : heldUpdate;
         if (info == null) {
             sender.sendMessage(plugin.getName() + ": no update pending — run a check first.");
             return;
@@ -344,6 +353,22 @@ public final class Updater {
     private void runCheck(boolean notify, Consumer<UpdateCheckResult> callback) {
         UpdateCheckResult result = doCheck();
         lastResult = result;
+        if (result.status() == UpdateCheckResult.Status.HELD) {
+            // Newer, but still settling in: no notice, no auto-stage. Kept aside so
+            // /status can explain the wait and an admin can still force the install.
+            UpdateInfo info = result.info();
+            pendingUpdate = null;
+            heldUpdate = info;
+            if (!info.version().equalsIgnoreCase(heldLoggedVersion)) {
+                heldLoggedVersion = info.version();
+                plugin.getLogger().info("Version " + info.version() + " is out, but it is being left alone "
+                        + "for now — new releases have to be available for " + minimumReleaseAge.toHours()
+                        + " hour(s) before this server takes them.");
+            }
+            if (callback != null) callback.accept(result);
+            return;
+        }
+        heldUpdate = null;
         if (result.status() == UpdateCheckResult.Status.UPDATE_AVAILABLE) {
             UpdateInfo info = result.info();
             pendingUpdate = info;
@@ -392,6 +417,11 @@ public final class Updater {
                 if (state.isIgnored(info.version())) {
                     return UpdateCheckResult.ignored(info);
                 }
+                long readyAt = readyAtEpochMs(info);
+                if (readyAt > System.currentTimeMillis()) {
+                    heldUntilEpochMs = readyAt;
+                    return UpdateCheckResult.held(info);
+                }
                 return UpdateCheckResult.available(withChangelogOverride(ctx, info));
             } catch (Exception e) {
                 lastError = e;
@@ -405,12 +435,28 @@ public final class Updater {
         return UpdateCheckResult.failed(lastError);
     }
 
+    /**
+     * The moment this release may be acted on, per the optional settle-in time.
+     * The publisher's release timestamp is the clock when a source provides one;
+     * otherwise we fall back to when this server first saw the version, which
+     * can only ever make the wait longer, never shorter.
+     */
+    private long readyAtEpochMs(UpdateInfo info) {
+        if (minimumReleaseAge == null || minimumReleaseAge.isZero() || minimumReleaseAge.isNegative()) {
+            return 0L;
+        }
+        long releasedAt = info.publishedEpochMs() > 0 ? info.publishedEpochMs() : state.firstSeenEpochMs();
+        if (releasedAt <= 0) releasedAt = System.currentTimeMillis();
+        return releasedAt + minimumReleaseAge.toMillis();
+    }
+
     private UpdateInfo withChangelogOverride(SourceContext ctx, UpdateInfo info) {
         if (changelogUrl == null) return info;
         try {
             String text = ctx.http().get(changelogUrl).trim();
             return new UpdateInfo(info.version(), text, info.downloadUrl(), info.fileName(),
-                    info.hashes(), info.sizeBytes(), info.restartRequired(), info.releasePageUrl());
+                    info.hashes(), info.sizeBytes(), info.restartRequired(), info.releasePageUrl(),
+                    info.publishedEpochMs());
         } catch (Exception e) {
             ctx.logger().fine("Changelog fetch failed: " + e.getMessage());
             return info;
@@ -426,6 +472,30 @@ public final class Updater {
 
     public UpdateCheckResult lastResult() {
         return lastResult;
+    }
+
+    /**
+     * A newer version that was found but is still inside its settle-in window,
+     * or null. It is deliberately not offered as a {@link #pendingUpdate()}:
+     * nothing is announced, downloaded or staged for it until the wait is over.
+     */
+    public UpdateInfo heldUpdate() {
+        return heldUpdate;
+    }
+
+    /**
+     * Plain-English explanation of the settle-in wait for {@link #heldUpdate()},
+     * or null when nothing is being held back.
+     */
+    public String holdNotice() {
+        UpdateInfo held = heldUpdate;
+        if (held == null) return null;
+        long remainingMs = heldUntilEpochMs - System.currentTimeMillis();
+        long hours = Math.max(1L, Math.round(remainingMs / 3_600_000.0));
+        return "version " + held.version() + " is out (you have " + currentVersion + "), but it is brand new."
+                + " It will be offered in about " + hours + " hour(s) — new releases have to be available for "
+                + minimumReleaseAge.toHours() + " hour(s) first, so a quick fix-up release can land before"
+                + " this server takes one. Use the download command to install it right away anyway.";
     }
 
     public String currentVersion() {
@@ -469,6 +539,7 @@ public final class Updater {
         private final List<UpdateSource> sources = new ArrayList<>();
         private UpdateMode mode = UpdateMode.NOTIFY;
         private Duration checkInterval = Duration.ofHours(6);
+        private Duration minimumReleaseAge = Duration.ZERO;
         private String permission;
         private String prefix;
         private String commandRoot;
@@ -519,6 +590,23 @@ public final class Updater {
                 throw new IllegalArgumentException("Check interval must be at least 15 minutes");
             }
             this.checkInterval = interval;
+            return this;
+        }
+
+        /**
+         * Ignore a release until it has been publicly available for this long
+         * (default {@link Duration#ZERO} — act on updates as soon as they appear).
+         *
+         * <p>Guards against following a publisher's own mistakes: when a broken
+         * release is pulled or hotfixed within hours, a server that waits never
+         * installs it. The clock is the publisher's release timestamp where the
+         * source provides one (Modrinth, GitHub, Hangar, Jenkins all do), else
+         * the first time this server saw the version. It delays notices,
+         * downloads and auto-staging alike; an admin running the download
+         * command by hand still gets the update immediately.</p>
+         */
+        public Builder minimumReleaseAge(Duration age) {
+            this.minimumReleaseAge = age == null ? Duration.ZERO : age;
             return this;
         }
 
