@@ -55,7 +55,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.darkstarworks.PluginPulse:pluginpulse-core:v0.9.0")
+    implementation("com.github.ESMP-FUN.PluginPulse:pluginpulse-core:v0.9.0")
 }
 ```
 
@@ -251,7 +251,7 @@ jar, and loads + enables the new version. If the new version fails to load it
 rolls back to the automatic backup.
 
 ```kotlin
-implementation("com.github.darkstarworks.PluginPulse:pluginpulse-hotreload:v0.3.0")
+implementation("com.github.ESMP-FUN.PluginPulse:pluginpulse-hotreload:v0.9.0")
 ```
 
 ```java

@@ -147,7 +147,7 @@ PluginPulse is also a library. Add it to your plugin and it updates itself, with
 
 ```kotlin
 dependencies {
-    implementation("com.github.darkstarworks.PluginPulse:pluginpulse-core:v0.9.0")
+    implementation("com.github.ESMP-FUN.PluginPulse:pluginpulse-core:v0.9.0")
 }
 tasks.shadowJar {
     relocate("io.github.darkstarworks.pluginpulse", "my.plugin.libs.pluginpulse")
