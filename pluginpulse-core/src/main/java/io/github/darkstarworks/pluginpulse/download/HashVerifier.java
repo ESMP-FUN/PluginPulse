@@ -38,7 +38,7 @@ public final class HashVerifier {
     public static String digest(Path file, String algo) throws IOException {
         MessageDigest md;
         try {
-            md = MessageDigest.getInstance(algo.toUpperCase().replace("SHA", "SHA-"));
+            md = MessageDigest.getInstance(algo.toUpperCase(java.util.Locale.ROOT).replace("SHA", "SHA-"));
         } catch (NoSuchAlgorithmException e) {
             throw new IOException("Unsupported hash algorithm: " + algo, e);
         }

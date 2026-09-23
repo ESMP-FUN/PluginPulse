@@ -32,7 +32,7 @@ final class PluginUnloader {
 
         Bukkit.getPluginManager().disablePlugin(plugin);
         // disablePlugin already cancels tasks/unregisters listeners & services,
-        // but plugins that misbehave in onDisable can leave stragglers — sweep again.
+        // but plugins that misbehave in onDisable can leave stragglers, sweep again.
         HandlerList.unregisterAll(plugin);
         Bukkit.getScheduler().cancelTasks(plugin);
         Bukkit.getServicesManager().unregisterAll(plugin);
@@ -51,7 +51,7 @@ final class PluginUnloader {
                 closeable.close();
             } catch (Exception e) {
                 logger.log(Level.WARNING, "Could not close classloader of " + name
-                        + " — the old jar may stay locked until restart", e);
+                        + ": the old jar may stay locked until restart", e);
             }
         }
         logger.info("Unloaded plugin " + name + ".");
@@ -66,11 +66,17 @@ final class PluginUnloader {
     private static void removeCommands(Plugin plugin) throws ReflectiveOperationException {
         Map<String, Command> known = mutableKnownCommands();
         // Paper 1.20.6+ backs this with a Brigadier forwarding map whose
-        // iterators don't support remove() — but Map#remove(key) works.
+        // iterators don't support remove(): but Map#remove(key) works.
         // Snapshot the matching keys first, then remove by key.
+        // Commands registered straight into the map (such as PluginPulse's own
+        // self-registered one) aren't PluginCommands, so also match anything
+        // loaded from the plugin's jar.
+        ClassLoader pluginLoader = plugin.getClass().getClassLoader();
         List<String> toRemove = new ArrayList<>();
         for (Map.Entry<String, Command> entry : Map.copyOf(known).entrySet()) {
-            if (entry.getValue() instanceof PluginCommand pluginCommand && pluginCommand.getPlugin() == plugin) {
+            Command command = entry.getValue();
+            boolean owned = command instanceof PluginCommand pluginCommand && pluginCommand.getPlugin() == plugin;
+            if (owned || command.getClass().getClassLoader() == pluginLoader) {
                 toRemove.add(entry.getKey());
             }
         }

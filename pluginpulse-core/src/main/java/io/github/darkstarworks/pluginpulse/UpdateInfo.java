@@ -36,7 +36,7 @@ public record UpdateInfo(
         if (publishedEpochMs <= 0) publishedEpochMs = -1L;
     }
 
-    /** Without a publication time — the source doesn't publish one. */
+    /** Without a publication time: the source doesn't publish one. */
     public UpdateInfo(String version, String changelog, String downloadUrl, String fileName,
                       Map<String, String> hashes, long sizeBytes, boolean restartRequired,
                       String releasePageUrl) {

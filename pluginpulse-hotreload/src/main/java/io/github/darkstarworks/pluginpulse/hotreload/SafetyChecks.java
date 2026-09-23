@@ -64,7 +64,7 @@ final class SafetyChecks {
                         .orElse(null);
             }
         } catch (Exception e) {
-            return null; // can't inspect → don't block on this check alone
+            return null; // can't inspect -> don't block on this check alone
         }
     }
 
@@ -74,12 +74,29 @@ final class SafetyChecks {
         String name = target.getName();
         for (Plugin other : Bukkit.getPluginManager().getPlugins()) {
             if (other == target || !other.isEnabled()) continue;
-            if (other.getDescription().getDepend().contains(name)
-                    || other.getDescription().getSoftDepend().contains(name)) {
+            if (declaredDependencies(other).contains(name)) {
                 dependents.add(other.getName());
             }
         }
         return dependents;
+    }
+
+    /**
+     * Hard and soft dependencies. Paper's plugin meta also covers plugins that
+     * declare theirs in {@code paper-plugin.yml}; Spigot only has the description.
+     */
+    @SuppressWarnings("deprecation")
+    static List<String> declaredDependencies(Plugin plugin) {
+        List<String> deps = new ArrayList<>();
+        try {
+            var meta = plugin.getPluginMeta();
+            deps.addAll(meta.getPluginDependencies());
+            deps.addAll(meta.getPluginSoftDependencies());
+        } catch (NoSuchMethodError e) {
+            deps.addAll(plugin.getDescription().getDepend());
+            deps.addAll(plugin.getDescription().getSoftDepend());
+        }
+        return deps;
     }
 
     static boolean isFolia() {

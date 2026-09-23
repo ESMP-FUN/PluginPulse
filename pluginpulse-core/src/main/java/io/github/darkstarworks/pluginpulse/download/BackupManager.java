@@ -14,7 +14,7 @@ import java.util.stream.Stream;
 /**
  * Copies the currently running jar to a backups directory before an update is
  * staged, and prunes old backups beyond the retention count. Copying a locked
- * jar is a read — safe on Windows even while the server runs.
+ * jar is a read: safe on Windows even while the server runs.
  */
 public final class BackupManager {
 

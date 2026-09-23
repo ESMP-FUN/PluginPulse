@@ -1,5 +1,5 @@
 /*
- * Generates docs/assets/og.png — the 1200x630 preview card sites like Discord,
+ * Generates docs/assets/og.png: the 1200x630 preview card sites like Discord,
  * Reddit and X show when someone shares a link to the tool. Run it after
  * changing the wording or the palette:
  *
@@ -71,7 +71,7 @@ public final class OgCard {
         g.setColor(ACCENT);
         g.drawString("Pulse", wx, wordY);
 
-        // Headline — two lines, the promise first.
+        // Headline: two lines, the promise first.
         g.setColor(INK);
         g.setFont(font(Font.BOLD, 68));
         g.drawString("Add auto-updates to a", x, 300);

@@ -9,8 +9,8 @@ import java.util.Map;
 
 /**
  * Builds and sends update notices. On Paper these render as rich MiniMessage
- * (colours, hover, clickable links); on Spigot — which does not bundle
- * Adventure — they fall back to plain text with the download URL spelled out,
+ * (colours, hover, clickable links); on Spigot, which does not bundle
+ * Adventure: they fall back to plain text with the download URL spelled out,
  * so the updater still works everywhere.
  *
  * <p>Every MiniMessage template can be overridden by the host plugin;
@@ -55,13 +55,13 @@ public final class UpdateNotifier {
             // RESTART is shown when hot reload isn't available/safe.
             KEY_STAGED_RELOAD, "<prefix> <green>Update <latest> downloaded.</green> "
                     + "<click:run_command:'<cmdroot> update apply'>"
-                    + "<hover:show_text:'<gray>Apply now — no restart'><aqua>[Install Now]</aqua></hover></click>",
+                    + "<hover:show_text:'<gray>Install it now, no restart needed'><aqua>[Install Now]</aqua></hover></click>",
             KEY_STAGED_RESTART, "<prefix> <green>Update <latest> downloaded and staged.</green> "
                     + "<gray>Restart the server to apply it.</gray>"
     );
 
     private final String prefix;
-    private final String commandRoot; // e.g. "/tcp" — enables the [Ignore] button
+    private final String commandRoot; // e.g. "/tcp", enables the [Ignore] button
     private final Map<String, String> messages;
 
     public UpdateNotifier(String prefix, String commandRoot, Map<String, String> overrides) {
@@ -144,15 +144,27 @@ public final class UpdateNotifier {
     private String render(String key, String current, UpdateInfo info, String template) {
         return template
                 .replace("<prefix>", prefix)
-                .replace("<current>", current)
-                .replace("<latest>", info.version())
-                .replace("<page>", pageUrl(info))
+                .replace("<current>", safeVersion(current))
+                .replace("<latest>", safeVersion(info.version()))
+                .replace("<page>", safeUrl(pageUrl(info)))
                 .replace("<cmdroot>", commandRoot == null ? "" : commandRoot);
     }
 
     private static String pageUrl(UpdateInfo info) {
         return info.releasePageUrl() != null ? info.releasePageUrl()
                 : info.downloadUrl() != null ? info.downloadUrl() : "";
+    }
+
+    /**
+     * Version text goes inside clickable commands, so anything that could close
+     * the quote or open a tag is dropped rather than trusted from the source.
+     */
+    static String safeVersion(String version) {
+        return version == null ? "" : version.replaceAll("[^A-Za-z0-9._+\\-]", "");
+    }
+
+    static String safeUrl(String url) {
+        return url.replaceAll("['<>\\\\\\s]", "");
     }
 
     /** Drop MiniMessage tags for the plain-text (Spigot) fallback. */

@@ -6,7 +6,7 @@ import java.nio.file.Path;
 /**
  * Emits the static assets the in-browser JS engine consumes:
  * <ul>
- *   <li>{@code wrapper-template.class} — a wrapper generated with placeholder
+ *   <li>{@code wrapper-template.class}: a wrapper generated with placeholder
  *       names ({@code PP__MAIN__PLACEHOLDER}, {@code PP__PULSE__PLACEHOLDER})
  *       that the JS substitutes into via the same constant-pool edit it uses to
  *       relocate the core. Keeping template generation in the verified ASM path

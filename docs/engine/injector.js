@@ -1,8 +1,8 @@
 /*
- * injector.js — in-browser WRAPPER-strategy injector. Does all class rewriting
+ * injector.js: in-browser WRAPPER-strategy injector. Does all class rewriting
  * through the constant-pool editor, so it needs no bytecode library and is
  * class-version agnostic. A final main class (the default for Kotlin plugins) is
- * de-finalized first so the wrapper can subclass it — clearing final only permits
+ * de-finalized first so the wrapper can subclass it, clearing final only permits
  * subclassing, which is safe for a plugin main class. (The CLI, pluginpulse-inject,
  * instead instruments final mains in place; either produces a working updater.)
  *
@@ -126,7 +126,7 @@
     };
   }
 
-  /** Inspect without modifying — powers the "Preview jar" button. */
+  /** Inspect without modifying, powers the "Preview jar" button. */
   async function inspectJar(jarBytes) {
     const JSZip = getJSZip();
     const zip = await JSZip.loadAsync(jarBytes);
@@ -168,7 +168,7 @@
       // Kotlin compiles every class as final by default, which would stop the
       // wrapper from subclassing the main. Clear ACC_FINAL on the class (and on
       // the two lifecycle methods the wrapper overrides, for the rare method-final
-      // plugin). Removing final only permits subclassing — safe for a main class.
+      // plugin). Removing final only permits subclassing, safe for a main class.
       const mainBytes = await mainEntry.async('uint8array');
       zip.file(mainPath, CP.definalize(mainBytes, ['onEnable', 'onDisable']));
     }

@@ -1,17 +1,20 @@
 package io.github.darkstarworks.pluginpulse.source;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.darkstarworks.pluginpulse.UpdateInfo;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Map;
 
 /**
  * Hangar (hangar.papermc.io). Verified endpoints:
  * <ul>
- *   <li>{@code GET /api/v1/projects/{slug}/latestrelease} — plain-text version</li>
- *   <li>{@code GET /api/v1/projects/{slug}/versions/{name}} — JSON with
+ *   <li>{@code GET /api/v1/projects/{slug}/latestrelease}: plain-text version</li>
+ *   <li>{@code GET /api/v1/projects/{slug}/versions/{name}}: JSON with
  *       {@code downloads.{PLATFORM}.fileInfo.{name,sizeBytes,sha256Hash}} and
  *       {@code downloadUrl}; {@code description} is the changelog</li>
  * </ul>
@@ -34,13 +37,29 @@ public final class HangarSource implements UpdateSource {
 
     @Override
     public UpdateInfo fetchLatest(SourceContext ctx) throws Exception {
+        if (ctx.serverVersion() != null) {
+            // Newest release on the default channel built for this server's
+            // Minecraft version. Empty when the project renamed that channel or
+            // doesn't list this version, and then the plain latest release is used.
+            String list = ctx.http().get(API + "/projects/" + projectSlug + "/versions?limit=1&offset=0"
+                    + "&channel=Release&platform=" + platform
+                    + "&platformVersion=" + URLEncoder.encode(ctx.serverVersion(), StandardCharsets.UTF_8));
+            JsonArray result = JsonParser.parseString(list).getAsJsonObject().getAsJsonArray("result");
+            if (result != null && !result.isEmpty()) {
+                return parse(result.get(0).getAsJsonObject(), platform, projectSlug);
+            }
+        }
         String latest = ctx.http().get(API + "/projects/" + projectSlug + "/latestrelease").trim();
-        String json = ctx.http().get(API + "/projects/" + projectSlug + "/versions/" + latest);
+        String json = ctx.http().get(API + "/projects/" + projectSlug + "/versions/"
+                + URLEncoder.encode(latest, StandardCharsets.UTF_8).replace("+", "%20"));
         return parse(json, platform, projectSlug);
     }
 
     static UpdateInfo parse(String json, String platform, String projectSlug) {
-        JsonObject v = JsonParser.parseString(json).getAsJsonObject();
+        return parse(JsonParser.parseString(json).getAsJsonObject(), platform, projectSlug);
+    }
+
+    static UpdateInfo parse(JsonObject v, String platform, String projectSlug) {
         String version = v.get("name").getAsString();
         String changelog = v.has("description") && !v.get("description").isJsonNull()
                 ? v.get("description").getAsString() : "";

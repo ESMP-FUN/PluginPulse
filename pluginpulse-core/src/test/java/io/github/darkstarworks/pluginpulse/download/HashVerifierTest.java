@@ -34,10 +34,10 @@ class HashVerifierTest {
 
     @Test
     void prefersStrongestAlgorithm() throws IOException {
-        // sha512 correct, sha256 wrong: sha512 wins → VERIFIED.
+        // sha512 correct, sha256 wrong: sha512 wins -> VERIFIED.
         assertEquals(HashVerifier.Result.VERIFIED,
                 HashVerifier.verify(abcFile(), Map.of("sha512", ABC_SHA512, "sha256", "00")));
-        // sha512 wrong, sha256 correct: sha512 wins → MISMATCH.
+        // sha512 wrong, sha256 correct: sha512 wins -> MISMATCH.
         assertEquals(HashVerifier.Result.MISMATCH,
                 HashVerifier.verify(abcFile(), Map.of("sha512", "00", "sha256", ABC_SHA256)));
     }

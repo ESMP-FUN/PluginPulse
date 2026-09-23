@@ -63,4 +63,9 @@ public final class HttpSupport {
     public HttpClient client() {
         return client;
     }
+
+    /** Abort every request in flight and refuse new ones. Called when the host plugin shuts down. */
+    public void shutdownNow() {
+        client.shutdownNow();
+    }
 }

@@ -23,13 +23,24 @@ import java.util.logging.Logger;
  *   <li>Refused on Folia.</li>
  *   <li>Refused while other enabled plugins depend (hard or soft) on the target.</li>
  *   <li>Static state, executors and objects other plugins captured from the old
- *       instance are the host's responsibility — repeated reloads can leak
+ *       instance are the host's responsibility: repeated reloads can leak
  *       metaspace. Restart-install remains the recommended path.</li>
  * </ul>
  */
 public final class HotReloadEngine implements ReloadEngine {
 
+    private static final boolean PAPER_LOADER = classExists("io.papermc.paper.plugin.manager.PaperPluginManagerImpl");
+
     private HotReloadEngine() {
+    }
+
+    private static boolean classExists(String name) {
+        try {
+            Class.forName(name);
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 
     public static HotReloadEngine create() {
@@ -55,7 +66,7 @@ public final class HotReloadEngine implements ReloadEngine {
         String name = plugin.getName();
 
         // Everything executed after the classloader closes must already be
-        // loaded — touch our own classes now so no lazy load hits a closed jar.
+        // loaded: touch our own classes now so no lazy load hits a closed jar.
         preloadOwnClasses();
 
         PluginUnloader.unload(plugin, logger);
@@ -63,10 +74,10 @@ public final class HotReloadEngine implements ReloadEngine {
         try {
             Files.move(newJar, liveJar, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            // Old jar still locked (classloader close failed?) — nothing was
+            // Old jar still locked (classloader close failed?), nothing was
             // broken yet beyond the unload; a restart will pick up the staged jar.
             throw new IOException("Could not replace " + liveJar.getFileName()
-                    + " (file still locked?) — the update will apply on restart instead", e);
+                    + " (is the file still locked?), so the update will apply on the next restart instead", e);
         }
 
         // Paper remaps plugin jars into <plugins>/.paper-remapped/<name>; the
@@ -83,7 +94,7 @@ public final class HotReloadEngine implements ReloadEngine {
             loadAndEnable(liveJar, logger);
             logger.info("Hot reload of " + name + " complete.");
         } catch (Exception loadFailure) {
-            logger.log(Level.SEVERE, "New version of " + name + " failed to load — rolling back", loadFailure);
+            logger.log(Level.SEVERE, "New version of " + name + " failed to load, rolling back", loadFailure);
             rollback(liveJar, backupJar, name, logger, loadFailure);
         }
     }
@@ -93,7 +104,8 @@ public final class HotReloadEngine implements ReloadEngine {
         if (loaded == null) {
             throw new IllegalStateException("Server returned no plugin instance for " + jar.getFileName());
         }
-        loaded.onLoad();
+        // Paper's runtime loadPlugin already runs onLoad; Spigot's leaves it to the caller.
+        if (!PAPER_LOADER) loaded.onLoad();
         Bukkit.getPluginManager().enablePlugin(loaded);
         if (!loaded.isEnabled()) {
             throw new IllegalStateException(loaded.getName() + " did not enable");
@@ -103,7 +115,7 @@ public final class HotReloadEngine implements ReloadEngine {
     private void rollback(Path liveJar, Path backupJar, String name, Logger logger, Exception cause) throws Exception {
         if (backupJar == null || !Files.exists(backupJar)) {
             throw new IllegalStateException("New version of " + name
-                    + " failed and no backup is available — reinstall manually", cause);
+                    + " failed and no backup is available, reinstall manually", cause);
         }
         Files.copy(backupJar, liveJar, StandardCopyOption.REPLACE_EXISTING);
         try {
@@ -112,7 +124,7 @@ public final class HotReloadEngine implements ReloadEngine {
         } catch (Exception rollbackFailure) {
             rollbackFailure.addSuppressed(cause);
             throw new IllegalStateException("Rollback of " + name
-                    + " ALSO failed — the plugin is not running; restart the server", rollbackFailure);
+                    + " ALSO failed: the plugin is not running; restart the server", rollbackFailure);
         }
     }
 

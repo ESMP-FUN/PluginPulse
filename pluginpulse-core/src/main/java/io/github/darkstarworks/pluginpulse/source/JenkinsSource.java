@@ -19,15 +19,15 @@ import java.util.regex.Pattern;
  * archived {@code .jar} artifact as the latest version.
  *
  * <p>Jobs commonly archive several jars (FAWE ships Bukkit/CLI/Paper, LuckPerms
- * ten platforms), so an artifact filter — a case-insensitive regex matched
- * against the file name — picks the right one; without a filter the first
+ * ten platforms), so an artifact filter, a case-insensitive regex matched
+ * against the file name: picks the right one; without a filter the first
  * {@code .jar} that isn't a {@code -sources}/{@code -javadoc} jar wins.</p>
  *
  * <p>The version is derived from the artifact file name by taking everything
  * from the first dash-digit boundary ({@code FastAsyncWorldEdit-Paper-2.15.3-SNAPSHOT-1348.jar}
- * → {@code 2.15.3-SNAPSHOT-1348}); when no version-looking part exists the
+ * -> {@code 2.15.3-SNAPSHOT-1348}); when no version-looking part exists the
  * Jenkins build number is used. Jenkins publishes no usable checksums, so
- * {@link UpdateInfo#hashes()} is always empty — download/auto modes need
+ * {@link UpdateInfo#hashes()} is always empty: download/auto modes need
  * {@code require-hash: false} or staging will (correctly) refuse the file.</p>
  */
 public final class JenkinsSource implements UpdateSource {
@@ -58,7 +58,7 @@ public final class JenkinsSource implements UpdateSource {
      * Turn a user-supplied regex (from {@code jenkins-artifact}) into an artifact
      * filter. Matched case-insensitively anywhere in the file name.
      *
-     * @throws java.util.regex.PatternSyntaxException on an invalid regex —
+     * @throws java.util.regex.PatternSyntaxException on an invalid regex;
      *         callers warn and fall back to the default filter
      */
     public static Predicate<String> artifactRegex(String regex) {
@@ -87,7 +87,7 @@ public final class JenkinsSource implements UpdateSource {
         if (!body.startsWith("{")) {
             throw new IllegalStateException("the Jenkins server answered with "
                     + (body.startsWith("<") ? "an HTML page" : "something that isn't JSON")
-                    + " instead of build data — it is probably blocking anonymous API access"
+                    + " instead of build data. It is probably blocking anonymous API access"
                     + " (login wall, proxy rule, or Cloudflare challenge), so this job can't be followed");
         }
         JsonObject build = JsonParser.parseString(body).getAsJsonObject();
@@ -123,7 +123,7 @@ public final class JenkinsSource implements UpdateSource {
     /**
      * Version from the artifact name: everything after the first {@code -} that
      * is followed by a digit, with {@code .jar} stripped
-     * ({@code LuckPerms-Bukkit-5.5.59.jar} → {@code 5.5.59}). Falls back to the
+     * ({@code LuckPerms-Bukkit-5.5.59.jar} -> {@code 5.5.59}). Falls back to the
      * Jenkins build number when the name has no version-looking part.
      */
     static String deriveVersion(String fileName, long buildNumber) {

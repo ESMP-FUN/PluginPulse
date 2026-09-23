@@ -43,7 +43,7 @@ final class JarInspector {
             byte[] mainBytes = readClass(zip, descriptor.main());
             // If we can't read the main class bytes (missing, or an unsupported
             // version we still can't structurally parse) assume non-final and
-            // use WRAPPER — the produced wrapper links to the main by name at
+            // use WRAPPER: the produced wrapper links to the main by name at
             // runtime regardless of its class version.
             boolean finalMain = mainBytes != null && ClassAccess.isFinal(mainBytes);
             Strategy strategy = finalMain ? Strategy.INSTRUMENT : Strategy.WRAPPER;

@@ -107,7 +107,7 @@ class DownloadPipelineTest {
     void refusesChecksumMismatch() throws Exception {
         IOException e = assertThrows(IOException.class, () -> pipeline(true)
                 .downloadAndStage(info("0".repeat(64)), Map.of(), currentJar, "1.0.0"));
-        assertTrue(e.getMessage().contains("mismatch"));
+        assertTrue(e.getMessage().contains("doesn't match its published checksum"));
         assertFalse(Files.exists(updateFolder.resolve("MyPlugin-1.0.0.jar")));
     }
 

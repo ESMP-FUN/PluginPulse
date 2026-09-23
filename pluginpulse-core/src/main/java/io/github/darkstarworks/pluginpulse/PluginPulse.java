@@ -4,6 +4,7 @@ import io.github.darkstarworks.pluginpulse.source.GitHubReleasesSource;
 import io.github.darkstarworks.pluginpulse.source.HangarSource;
 import io.github.darkstarworks.pluginpulse.source.JenkinsSource;
 import io.github.darkstarworks.pluginpulse.source.ModrinthSource;
+import io.github.darkstarworks.pluginpulse.version.ServerVersion;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -30,7 +31,7 @@ import java.util.logging.Level;
  * {@link Updater#builder(JavaPlugin)} directly instead.</p>
  *
  * <p>Every method fails soft: a missing or malformed {@code pluginpulse.yml}
- * logs a warning and returns {@code null}/{@code false} — it never throws into
+ * logs a warning and returns {@code null}/{@code false}, it never throws into
  * the host plugin's lifecycle.</p>
  */
 public final class PluginPulse {
@@ -54,7 +55,7 @@ public final class PluginPulse {
         try {
             InputStream in = plugin.getResource("pluginpulse.yml");
             if (in == null) {
-                plugin.getLogger().warning("PluginPulse: no pluginpulse.yml found in the jar — updater disabled.");
+                plugin.getLogger().warning("PluginPulse: no pluginpulse.yml found in the jar, updater disabled.");
                 return null;
             }
             YamlConfiguration cfg;
@@ -67,7 +68,7 @@ public final class PluginPulse {
             String hangar = trimToNull(cfg.getString("hangar"));
             String jenkins = trimToNull(cfg.getString("jenkins"));
             if (modrinth == null && github == null && hangar == null && jenkins == null) {
-                plugin.getLogger().warning("PluginPulse: pluginpulse.yml has no modrinth/github/hangar/jenkins source — updater disabled.");
+                plugin.getLogger().warning("PluginPulse: pluginpulse.yml has no modrinth/github/hangar/jenkins source, updater disabled.");
                 return null;
             }
 
@@ -100,7 +101,7 @@ public final class PluginPulse {
             // is appended afterwards, and the historical default is modrinth > github
             // > hangar > jenkins when no list is given (CI snapshots rank last).
             java.util.Map<String, io.github.darkstarworks.pluginpulse.source.UpdateSource> available = new java.util.LinkedHashMap<>();
-            // Optional token for a PRIVATE GitHub repo — supplied literally or as
+            // Optional token for a PRIVATE GitHub repo, supplied literally or as
             // a ${ENV_VAR} reference (see Secrets). Authenticates both the version
             // check and the download; null/absent keeps the anonymous public path.
             String githubToken = Secrets.resolve(cfg.getString("github-token"));
@@ -113,7 +114,7 @@ public final class PluginPulse {
                 // Jenkins archives raw CI artifacts with no checksums; with the
                 // require-hash default (true) a download would always be refused.
                 if (!cfg.contains("require-hash")) {
-                    plugin.getLogger().info("PluginPulse: the jenkins source publishes no checksums — "
+                    plugin.getLogger().info("PluginPulse: the jenkins source publishes no checksums, "
                             + "download/auto modes need require-hash: false in pluginpulse.yml.");
                 }
             }
@@ -150,9 +151,11 @@ public final class PluginPulse {
             // releases and vice-versa. getBukkitVersion() ("1.21.8-R0.1-...")
             // works on both Spigot and Paper (getMinecraftVersion() is Paper-only).
             String track = trimToNull(cfg.getString("track"));
-            if (track != null) {
-                String mc = org.bukkit.Bukkit.getBukkitVersion().split("-")[0];
-                if (!mc.startsWith("1.")) builder.track(track);
+            if (track != null && ServerVersion.isModernNumbering(ServerVersion.detect())) {
+                builder.track(track);
+            }
+            if (cfg.contains("match-server-version")) {
+                builder.matchServerVersion(cfg.getBoolean("match-server-version", true));
             }
             if (cfg.contains("require-hash")) builder.requireHash(cfg.getBoolean("require-hash", true));
 
@@ -170,7 +173,7 @@ public final class PluginPulse {
             SUBCOMMANDS.put(plugin.getName(), new UpdateSubcommand(updater));
             return updater;
         } catch (Throwable t) {
-            plugin.getLogger().log(Level.WARNING, "PluginPulse: bootstrap failed — updater disabled.", t);
+            plugin.getLogger().log(Level.WARNING, "PluginPulse: the updater could not start, so update checks are off.", t);
             return null;
         }
     }
@@ -207,7 +210,7 @@ public final class PluginPulse {
         ReloadEngine engine = ReloadEngines.tryLoad();
         if (engine == null) {
             plugin.getLogger().warning("PluginPulse: hot-reload is enabled but the pluginpulse-hotreload "
-                    + "module isn't bundled — updates will stage for a restart instead.");
+                    + "module isn't bundled, so updates will wait for a restart instead.");
         }
         return engine;
     }
@@ -224,7 +227,7 @@ public final class PluginPulse {
             return JenkinsSource.artifactRegex(r);
         } catch (java.util.regex.PatternSyntaxException e) {
             plugin.getLogger().warning("PluginPulse: invalid jenkins-artifact regex '" + r
-                    + "' — using the default .jar filter instead.");
+                    + "': using the default .jar filter instead.");
             return null;
         }
     }
@@ -239,7 +242,7 @@ public final class PluginPulse {
     }
 
     private static UpdateMode parseMode(String name) {
-        return switch (name.toLowerCase()) {
+        return switch (name.toLowerCase(java.util.Locale.ROOT)) {
             case "check-only", "check", "silent" -> UpdateMode.CHECK_ONLY;
             case "download" -> UpdateMode.DOWNLOAD;
             case "auto-stage", "auto" -> UpdateMode.AUTO_STAGE;

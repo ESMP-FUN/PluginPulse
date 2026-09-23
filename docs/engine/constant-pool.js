@@ -1,9 +1,9 @@
 /*
- * constant-pool.js — a minimal, version-agnostic Java class-file constant-pool
+ * constant-pool.js: a minimal, version-agnostic Java class-file constant-pool
  * editor. It parses only the header + constant pool, edits CONSTANT_Utf8 entries
  * (with length fixups), and re-serialises. Everything after the constant pool is
  * copied verbatim because it references the pool by index, and indices never
- * change — we only rewrite Utf8 *bytes*.
+ * change: we only rewrite Utf8 *bytes*.
  *
  * Because it never inspects the class-file major version, it works on every
  * version including Java 25 / class v69 (mc26) jars. This is the same edit the
@@ -136,13 +136,13 @@
    * class as final by default, which blocks the wrapper from subclassing the
    * plugin main; clearing it only permits subclassing (safe for a plugin main
    * class), and clearing it on the lifecycle methods the wrapper overrides keeps
-   * the rare method-final plugin loading. Version-agnostic — it only flips
+   * the rare method-final plugin loading. Version-agnostic: it only flips
    * access_flags u2 values and never touches the constant pool or any code.
    */
   function definalize(bytes, methodNames) {
     const FINAL = 0x0010;
     const parsed = parseClass(bytes);
-    const tail = parsed.tail; // fresh buffer from bytes.slice — safe to mutate
+    const tail = parsed.tail; // fresh buffer from bytes.slice, safe to mutate
     const dv = new DataView(tail.buffer, tail.byteOffset, tail.byteLength);
 
     // Class access_flags = first u2 of the tail.

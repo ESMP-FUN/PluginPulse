@@ -6,7 +6,7 @@ package io.github.darkstarworks.pluginpulse;
  *
  * <p>A value of the form <code>${NAME}</code> is read from the environment
  * variable {@code NAME} at runtime, so a token never has to be written into a
- * committed config file — the server sets {@code NAME} and can rotate it without
+ * committed config file: the server sets {@code NAME} and can rotate it without
  * a rebuild. Any other non-blank value is used verbatim (this is what a
  * build-time-embedded token looks like). Blank, missing, or an unresolved
  * environment reference all yield {@code null} (i.e. "no token").</p>

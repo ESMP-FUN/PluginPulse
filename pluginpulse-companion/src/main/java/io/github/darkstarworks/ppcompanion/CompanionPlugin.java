@@ -8,6 +8,7 @@ import io.github.darkstarworks.pluginpulse.source.HangarSource;
 import io.github.darkstarworks.pluginpulse.source.JenkinsSource;
 import io.github.darkstarworks.pluginpulse.source.ModrinthSource;
 import io.github.darkstarworks.pluginpulse.source.UpdateSource;
+import io.github.darkstarworks.pluginpulse.platform.SchedulerAdapter;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
@@ -24,7 +25,7 @@ import java.util.Map;
 /**
  * A drop-in updater plugin for server owners. Reads {@code config.yml}, and for
  * each configured &amp; installed target plugin drives a {@link Updater} on its
- * behalf — no changes to the target plugin, no code.
+ * behalf: no changes to the target plugin, no code.
  *
  * <p>Everything is done through the public builder API: the companion never
  * touches a target's internals, only its jar (via PluginPulse's normal
@@ -42,6 +43,14 @@ public final class CompanionPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        // Each target's updater registers tasks and a listener in the target's
+        // name, which the server refuses until that target is enabled. Plugins
+        // enable in an order we don't control, so wait for the first tick, by
+        // which time every plugin has had its turn.
+        SchedulerAdapter.create(this).runGlobal(this::startAll);
+    }
+
+    private void startAll() {
         String contact = getConfig().getString("user-agent-contact", "").trim();
         long intervalHours = Math.max(1L, getConfig().getLong("check-interval-hours", 6L));
         // Server-wide settle-in wait; each entry may override both keys.
@@ -50,7 +59,7 @@ public final class CompanionPlugin extends JavaPlugin {
 
         ConfigurationSection plugins = getConfig().getConfigurationSection("plugins");
         if (plugins == null || plugins.getKeys(false).isEmpty()) {
-            getLogger().info("No plugins configured yet — edit config.yml and run /pluginpulse reload.");
+            getLogger().info("No plugins configured yet: edit config.yml and run /pluginpulse reload.");
             return;
         }
         for (String name : plugins.getKeys(false)) {
@@ -80,6 +89,10 @@ public final class CompanionPlugin extends JavaPlugin {
             skipped.put(name, "not installed");
             return;
         }
+        if (!target.isEnabled()) {
+            skipped.put(name, "installed but not running (it failed to start or was turned off)");
+            return;
+        }
         if (!(target instanceof JavaPlugin jp)) {
             skipped.put(name, "not a JavaPlugin (cannot be updated)");
             return;
@@ -101,7 +114,7 @@ public final class CompanionPlugin extends JavaPlugin {
             // Jenkins archives raw CI artifacts with no checksums; with the
             // require-hash default (true) a download would always be refused.
             if (!entry.contains("require-hash")) {
-                getLogger().info(name + ": the jenkins source publishes no checksums — "
+                getLogger().info(name + ": the jenkins source publishes no checksums, "
                         + "download/auto modes need require-hash: false for this entry.");
             }
         }
@@ -138,6 +151,7 @@ public final class CompanionPlugin extends JavaPlugin {
             if (!defaults.contact().isEmpty()) builder.userAgentContact(defaults.contact());
             String track = trimToNull(entry.getString("track"));
             if (track != null) builder.track(track);
+            builder.matchServerVersion(entry.getBoolean("match-server-version", true));
             if (entry.contains("require-hash")) {
                 builder.requireHash(entry.getBoolean("require-hash", true));
             }
@@ -180,8 +194,8 @@ public final class CompanionPlugin extends JavaPlugin {
             case "reload" -> {
                 stopAll();
                 reloadConfig();
-                onEnable();
-                sender.sendMessage("PluginPulse Companion reloaded — managing "
+                startAll();
+                sender.sendMessage("PluginPulse Companion reloaded: managing "
                         + updaters.size() + " plugin(s).");
             }
             case "check", "download", "install", "restore", "apply" -> dispatch(sender, action, args);
@@ -225,20 +239,9 @@ public final class CompanionPlugin extends JavaPlugin {
     }
 
     private void sendStatus(CommandSender sender) {
-        sender.sendMessage("PluginPulse Companion — managing " + updaters.size() + " plugin(s):");
+        sender.sendMessage("PluginPulse Companion: managing " + updaters.size() + " plugin(s):");
         updaters.forEach((name, updater) -> {
-            var pending = updater.pendingUpdate();
-            String held = updater.holdNotice();
-            String line;
-            if (pending != null) {
-                line = name + ": update available " + pending.version()
-                        + " (running " + updater.currentVersion() + ")";
-            } else if (held != null) {
-                line = name + ": waiting — " + held;
-            } else {
-                line = name + ": up to date (" + updater.currentVersion() + ")";
-            }
-            sender.sendMessage(" - " + line);
+            sender.sendMessage(" - " + name + ": " + updater.statusLine());
         });
         if (!skipped.isEmpty()) {
             sender.sendMessage("Skipped:");
@@ -267,7 +270,7 @@ public final class CompanionPlugin extends JavaPlugin {
             return JenkinsSource.artifactRegex(r);
         } catch (java.util.regex.PatternSyntaxException e) {
             getLogger().warning(name + ": invalid jenkins-artifact regex '" + r
-                    + "' — using the default .jar filter instead.");
+                    + "': using the default .jar filter instead.");
             return null;
         }
     }

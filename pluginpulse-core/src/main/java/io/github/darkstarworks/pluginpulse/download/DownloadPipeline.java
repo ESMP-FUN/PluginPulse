@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 /**
- * download → verify → backup → stage. All paths are injected so the pipeline
+ * download -> verify -> backup -> stage. All paths are injected so the pipeline
  * is testable without a running server; the {@code updateFolder} is
  * {@code Bukkit.getUpdateFolderFile()} in production, where the server swaps
  * the jar in on the next restart (filename must match the live jar exactly).
@@ -47,7 +47,7 @@ public final class DownloadPipeline {
      * Download the release described by {@code info}, verify it, back up the
      * current jar and stage the download under the current jar's filename.
      *
-     * @param headers        extra request headers (e.g. licence key) — may be empty
+     * @param headers        extra request headers (e.g. licence key), may be empty
      * @param currentJar     the live plugin jar (source of the staged filename)
      * @param currentVersion running version, used to name the backup
      * @throws IOException on download, verification or filesystem failure
@@ -62,7 +62,8 @@ public final class DownloadPipeline {
 
         Files.createDirectories(tmpDir);
         String fileName = info.fileName() != null ? info.fileName() : "update-" + info.version() + ".jar";
-        Path tmp = tmpDir.resolve(fileName + ".part");
+        // The published name only labels messages; it never becomes a path.
+        Path tmp = tmpDir.resolve("download.part");
         try {
             download(info.downloadUrl(), headers, tmp);
 
@@ -77,7 +78,7 @@ public final class DownloadPipeline {
             HashVerifier.Result hashResult = HashVerifier.verify(tmp, info.hashes());
             switch (hashResult) {
                 case MISMATCH -> throw new IOException(
-                        "Checksum mismatch for " + fileName + " — refusing to stage (corrupted or tampered download)");
+                        "The download of " + fileName + " doesn't match its published checksum, so it was not installed. It may be damaged or tampered with.");
                 case NO_HASH -> {
                     if (requireHash) {
                         throw new IOException("No checksum published for " + fileName

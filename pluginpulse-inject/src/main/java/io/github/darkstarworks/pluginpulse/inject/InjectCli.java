@@ -10,7 +10,7 @@ import java.nio.file.Path;
 import java.util.concurrent.Callable;
 
 /**
- * {@code pluginpulse-inject} — wire PluginPulse into a compiled plugin jar.
+ * {@code pluginpulse-inject}: wire PluginPulse into a compiled plugin jar.
  *
  * <pre>
  *   pluginpulse-inject inspect MyPlugin.jar

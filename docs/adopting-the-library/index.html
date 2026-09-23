@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Adopting the library — PluginPulse docs</title>
+  <title>Adopting the library | PluginPulse docs</title>
   <meta name="description" content="Add self-updating to your Paper/Spigot plugin: shade PluginPulse, drop in a pluginpulse.yml, and call one method from onEnable.">
   <link rel="canonical" href="https://esmp-fun.github.io/PluginPulse/adopting-the-library/">
   <link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
@@ -46,7 +46,7 @@
   </aside>
 
   <main class="content">
-    <h1>Path 1 — Shade the library into your own plugin</h1>
+    <h1>Path 1: Shade the library into your own plugin</h1>
     <p class="lede"><strong>Audience:</strong> you write and build your own Paper/Spigot plugin, and
       you want it to check for and (optionally) install its own updates.</p>
 
@@ -57,37 +57,37 @@
     <ol>
       <li>Add a repository + dependency to your build file.</li>
       <li>Shade and <strong>relocate</strong> the library into your jar.</li>
-      <li>Wire it up — either one file (no code) or the builder (power users).</li>
+      <li>Wire it up: either one file (no code) or the builder (power users).</li>
       <li>Verify it works.</li>
     </ol>
 
     <h2>1. Add the dependency (via JitPack)</h2>
     <p><strong>What is JitPack?</strong> <a href="https://jitpack.io">JitPack</a> is a free service
       that builds a Gradle/Maven dependency directly from a GitHub tag. <strong>You do not need a
-      JitPack account, and you don't need to sign up for anything</strong> — you just add its
+      JitPack account, and you don't need to sign up for anything</strong>. You just add its
       repository URL to your build file and reference the version by its Git tag. The first time
       anyone requests a given version, JitPack builds it (~1–2 minutes) and caches it forever
       after.</p>
-    <p>The current version is <strong><code>v0.8.0</code></strong>. Pick your build system:</p>
+    <p>The current version is <strong><code>v0.9.0</code></strong>. Pick your build system:</p>
 
-    <h3>Gradle (Kotlin DSL — <code>build.gradle.kts</code>)</h3>
+    <h3>Gradle (Kotlin DSL, <code>build.gradle.kts</code>)</h3>
     <pre><code>repositories {
     mavenCentral()
     maven("https://jitpack.io")               // &lt;-- add this
 }
 
 dependencies {
-    implementation("com.github.darkstarworks.PluginPulse:pluginpulse-core:v0.8.0")
+    implementation("com.github.darkstarworks.PluginPulse:pluginpulse-core:v0.9.0")
 }</code></pre>
 
-    <h3>Gradle (Groovy DSL — <code>build.gradle</code>)</h3>
+    <h3>Gradle (Groovy DSL, <code>build.gradle</code>)</h3>
     <pre><code>repositories {
     mavenCentral()
     maven { url 'https://jitpack.io' }         // &lt;-- add this
 }
 
 dependencies {
-    implementation 'com.github.darkstarworks.PluginPulse:pluginpulse-core:v0.8.0'
+    implementation 'com.github.darkstarworks.PluginPulse:pluginpulse-core:v0.9.0'
 }</code></pre>
 
     <h3>Maven (<code>pom.xml</code>)</h3>
@@ -102,7 +102,7 @@ dependencies {
     &lt;dependency&gt;
         &lt;groupId&gt;com.github.darkstarworks.PluginPulse&lt;/groupId&gt;
         &lt;artifactId&gt;pluginpulse-core&lt;/artifactId&gt;
-        &lt;version&gt;v0.8.0&lt;/version&gt;
+        &lt;version&gt;v0.9.0&lt;/version&gt;
     &lt;/dependency&gt;
 &lt;/dependencies&gt;</code></pre>
 
@@ -111,7 +111,7 @@ dependencies {
       package so that if another plugin also shades PluginPulse, the two copies don't clash at
       runtime. Always relocate.</p>
 
-    <h3>Gradle — <a href="https://gradleup.com/shadow/">Shadow</a> (Kotlin DSL)</h3>
+    <h3>Gradle with <a href="https://gradleup.com/shadow/">Shadow</a> (Kotlin DSL)</h3>
     <pre><code>plugins {
     id("com.gradleup.shadow") version "8.3.5"
 }
@@ -123,7 +123,7 @@ tasks.shadowJar {
 
 tasks.build { dependsOn(tasks.shadowJar) }</code></pre>
 
-    <h3>Gradle — Shadow (Groovy DSL)</h3>
+    <h3>Gradle with Shadow (Groovy DSL)</h3>
     <pre><code>plugins {
     id 'com.gradleup.shadow' version '8.3.5'
 }
@@ -134,7 +134,7 @@ shadowJar {
 
 build.dependsOn shadowJar</code></pre>
 
-    <h3>Maven — Shade plugin</h3>
+    <h3>Maven with the Shade plugin</h3>
     <pre><code>&lt;build&gt;
   &lt;plugins&gt;
     &lt;plugin&gt;
@@ -159,13 +159,13 @@ build.dependsOn shadowJar</code></pre>
   &lt;/plugins&gt;
 &lt;/build&gt;</code></pre>
 
-    <blockquote><p>Adventure/MiniMessage and Gson are <strong>not</strong> shaded — Paper already
+    <blockquote><p>Adventure/MiniMessage and Gson are <strong>not</strong> shaded. Paper already
       bundles them, and on Spigot the notices fall back to plain text automatically. The shaded
       footprint is just PluginPulse's own classes (~50–80 KB).</p></blockquote>
 
     <h2>3. Wire it up</h2>
 
-    <h3>Style A — one file, no code</h3>
+    <h3>Style A: one file, no code</h3>
     <p>Drop a <code>pluginpulse.yml</code> into <code>src/main/resources/</code>:</p>
     <pre><code># At least one source is required; the first is primary, the rest fallbacks.
 # See "finding your update source" in the docs for how to find these values.
@@ -180,7 +180,10 @@ check-interval-hours: 6
 # hold-new-updates: false         # true = ignore a release until it has been out for
 # hold-new-updates-hours: 18      # this many hours, so an author's own quick fix-up
 #                                 # release lands before the server takes the update
-# track: mc26                     # optional: follow a "-&lt;track&gt;" release line
+# match-server-version: true      # default true: when the plugin publishes separate jars
+#                                 # for 1.21 and 26.x, take the one listed for this
+#                                 # server's Minecraft version (Modrinth and Hangar)
+# track: mc26                     # optional: only take versions ending in "-&lt;track&gt;"
 # self-register-command: true     # default true
 # github-token: "${GITHUB_TOKEN}" # PRIVATE repo: ${ENV_VAR} ref (recommended) or a
 #                                 # literal PAT with read-only Contents scope. Used
@@ -194,8 +197,8 @@ check-interval-hours: 6
       Install]</strong> button that fetches and stages the jar in the background (no page visit),
       and a follow-up tells the admin whether it can be applied now (<strong>[Install
       Now]</strong>, when hot-reload is enabled and safe) or needs a restart.
-      <code>auto-stage</code> does that download automatically, and — with
-      <code>hot-reload: true</code> on a safe server — applies it with no restart at all.</p>
+      <code>auto-stage</code> does that download automatically and, with
+      <code>hot-reload: true</code> on a safe server, applies it with no restart at all.</p>
 
     <p>Then, in your plugin's main class:</p>
     <pre><code>import io.github.darkstarworks.pluginpulse.PluginPulse;
@@ -215,7 +218,7 @@ public final class MyPlugin extends JavaPlugin {
     <p>That's the whole integration. Because <code>command-root</code> is set and PluginPulse
       self-registers it when the name is free, <code>/myplugin update</code> works without you
       declaring a command. If you <em>do</em> declare <code>/myplugin</code> in your own
-      <code>plugin.yml</code>, PluginPulse leaves it alone — delegate the <code>update</code>
+      <code>plugin.yml</code>, PluginPulse leaves it alone. Delegate the <code>update</code>
       subcommand yourself:</p>
     <pre><code>import java.util.Arrays;
 
@@ -228,7 +231,7 @@ public boolean onCommand(CommandSender sender, Command cmd, String label, String
     return true;
 }</code></pre>
 
-    <h3>Style B — the builder (power users)</h3>
+    <h3>Style B: the builder (power users)</h3>
     <p>For custom sources, message overrides, a supplied scheduler, or the hot-reload engine:</p>
     <pre><code>import io.github.darkstarworks.pluginpulse.*;
 import io.github.darkstarworks.pluginpulse.source.*;
@@ -265,29 +268,29 @@ public final class MyPlugin extends JavaPlugin {
     <h2>4. Verify it worked</h2>
     <ol>
       <li><strong>Build:</strong> <code>./gradlew build</code> (or <code>mvn package</code>).</li>
-      <li><strong>Inspect the jar</strong> for the relocated package — it should be under
+      <li><strong>Inspect the jar</strong> for the relocated package. It should be under
         <em>your</em> namespace, not the original:
         <pre><code>unzip -l build/libs/MyPlugin.jar | grep pluginpulse
 # expect: com/example/myplugin/libs/pluginpulse/PluginPulse.class
 # NOT:    io/github/darkstarworks/pluginpulse/...</code></pre></li>
       <li><strong>Boot a test server</strong> with the jar. On enable you'll see an update-check
-        log line, and — if a newer version exists — a console notice and an in-game notice for
+        log line, and (if a newer version exists) a console notice and an in-game notice for
         players with your permission.</li>
     </ol>
 
     <h2>Troubleshooting</h2>
     <ul>
-      <li><strong><code>Could not resolve com.github.darkstarworks.PluginPulse...</code></strong> —
+      <li><strong><code>Could not resolve com.github.darkstarworks.PluginPulse...</code></strong>:
         JitPack builds a version the first time it's requested. Wait 1–2 minutes and rebuild. Check
         <a href="https://jitpack.io/#darkstarworks/PluginPulse">jitpack.io/#darkstarworks/PluginPulse</a>
         for the build log if it persists.</li>
       <li><strong>Relocation missing</strong> (jar still contains
-        <code>io/github/darkstarworks/...</code>) — the shade/relocate step didn't run. Confirm you
+        <code>io/github/darkstarworks/...</code>): the shade/relocate step didn't run. Confirm you
         build the shaded jar (Shadow's <code>shadowJar</code>, or Maven <code>package</code> with
         the shade plugin) and that <code>relocate</code> is configured as above.</li>
-      <li><strong>Modrinth checks fail</strong> — set <code>user-agent-contact</code> (Modrinth's
+      <li><strong>Modrinth checks fail</strong>: set <code>user-agent-contact</code> (Modrinth's
         API requires a caller to identify itself).</li>
-      <li><strong><code>/myplugin update</code> says "not active"</strong> — <code>bootstrap</code>
+      <li><strong><code>/myplugin update</code> says "not active"</strong>: <code>bootstrap</code>
         returned null (no <code>pluginpulse.yml</code>, no source, or <code>mode: off</code>).
         Check the server log for the PluginPulse warning line on enable.</li>
     </ul>

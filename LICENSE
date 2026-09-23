@@ -29,7 +29,7 @@ Software within the meaning of Section 2.
 You may not sell, resell, rent, or license the Software itself, charge for
 access to it, or offer it (or a derivative of it) as a product or service
 that competes with the Software. Embedding the Software in a plugin you
-distribute — including a plugin you sell — is governed by Section 3 and is
+distribute (including a plugin you sell) is governed by Section 3 and is
 not a violation of this section, provided the Software itself is not the
 product being sold.
 
@@ -43,8 +43,8 @@ another project. The following are expressly permitted:
      provided the Software's function within them is to serve that plugin's
      update checking and installation.
   b. Official channels. Distribution of the Software through channels
-     designated by ESMP — including GitHub Releases, JitPack, Modrinth,
-     Hangar, and SpigotMC — is permitted, including automated building and
+     designated by ESMP, including GitHub Releases, JitPack, Modrinth,
+     Hangar, and SpigotMC, is permitted, including automated building and
      serving of tagged versions by those services.
   c. Server packs. You may include an unmodified official companion-plugin
      jar in a server pack or template, provided it is not sold on its own.

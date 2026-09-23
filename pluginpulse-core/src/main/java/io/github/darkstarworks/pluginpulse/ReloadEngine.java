@@ -10,8 +10,8 @@ import java.nio.file.Path;
  * an instance via {@link Updater.Builder#reloadEngine(ReloadEngine)}.
  *
  * <p>Implementations swap the plugin's jar and reload it in-place. This is
- * inherently risky (classloader leaks, static state, cross-plugin references)
- * — restart-install remains the recommended default.</p>
+ * inherently risky (classloader leaks, static state, cross-plugin references);
+ * restart-install remains the recommended default.</p>
  */
 public interface ReloadEngine {
 

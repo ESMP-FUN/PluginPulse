@@ -11,6 +11,7 @@ import io.github.darkstarworks.pluginpulse.source.SourceContext;
 import io.github.darkstarworks.pluginpulse.source.UpdateSource;
 import io.github.darkstarworks.pluginpulse.state.IgnoreStore;
 import io.github.darkstarworks.pluginpulse.state.PendingUpdateStore;
+import io.github.darkstarworks.pluginpulse.version.ServerVersion;
 import io.github.darkstarworks.pluginpulse.version.Version;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -68,13 +69,15 @@ public final class Updater {
     private final ReloadEngine reloadEngine;
 
     private volatile UpdateInfo pendingUpdate;
-    /** Found, but still settling in — deliberately kept out of {@link #pendingUpdate}. */
+    /** Found, but still settling in, deliberately kept out of {@link #pendingUpdate}. */
     private volatile UpdateInfo heldUpdate;
     private volatile long heldUntilEpochMs;
     private volatile String heldLoggedVersion;
     private volatile UpdateCheckResult lastResult;
     private volatile Map<String, String> downloadHeaders = Map.of();
     private volatile String stagedVersion;
+    private volatile boolean stopped;
+    private final String serverVersion;
     private SchedulerAdapter.TaskHandle periodicTask;
     private JoinNotifyListener joinListener;
     private CommandRegistration commandRegistration;
@@ -101,6 +104,7 @@ public final class Updater {
         this.backupRetention = b.backupRetention;
         this.jarFileSupplier = b.jarFileSupplier;
         this.reloadEngine = b.reloadEngine;
+        this.serverVersion = b.matchServerVersion ? ServerVersion.detect() : null;
     }
 
     private static String buildUserAgent(Builder b) {
@@ -119,7 +123,7 @@ public final class Updater {
         }
         // Self-register the root command when one is configured and its name is
         // free. Adopters that declare their own command in plugin.yml keep it
-        // (the name is taken → skipped); injected/one-file jars gain a working
+        // (the name is taken -> skipped); injected/one-file jars gain a working
         // /<root> update command they otherwise couldn't wire.
         if (commandRoot != null && selfRegisterCommand) {
             commandRegistration = new CommandRegistration(
@@ -129,10 +133,17 @@ public final class Updater {
         long periodTicks = checkInterval.toSeconds() * 20L;
         // Small startup delay + jitter so fleets of servers don't check in lockstep.
         long delayTicks = 100L + ThreadLocalRandom.current().nextLong(0, 200);
-        periodicTask = scheduler.runAsyncRepeating(() -> runCheck(true, null), delayTicks, periodTicks);
+        periodicTask = scheduler.runAsyncRepeating(() -> guarded(() -> runCheck(true, null)), delayTicks, periodTicks);
     }
 
+    /**
+     * Stop checking, drop the listener and command, and abort any request in
+     * flight. Work that was already running finishes quietly instead of
+     * reaching back into a plugin whose jar the server has closed.
+     */
     public void shutdown() {
+        stopped = true;
+        http.shutdownNow();
         if (periodicTask != null) {
             periodicTask.cancel();
             periodicTask = null;
@@ -147,19 +158,38 @@ public final class Updater {
         }
     }
 
+    /**
+     * Run a background step. Once the plugin is shutting down the server has
+     * closed its jar, so a step that was already running can fail to load a
+     * class or schedule a follow-up; that is expected then and dropped.
+     */
+    private void guarded(Runnable step) {
+        if (stopped) return;
+        try {
+            step.run();
+        } catch (RuntimeException | LinkageError e) {
+            if (isActive()) throw e;
+        }
+    }
+
+    private boolean isActive() {
+        return !stopped && plugin.isEnabled();
+    }
+
     /** Manual check (e.g. from a command). Reports the outcome to {@code sender}. */
     public void checkNow(CommandSender sender) {
-        scheduler.runAsync(() -> runCheck(false, result -> scheduler.runGlobal(() -> {
+        if (stopped) return;
+        scheduler.runAsync(() -> guarded(() -> runCheck(false, result -> scheduler.runGlobal(() -> {
             switch (result.status()) {
                 case UPDATE_AVAILABLE -> notifier.notifySender(sender, currentVersion, result.info());
                 case HELD -> sender.sendMessage(plugin.getName() + ": " + holdNotice());
-                case IGNORED -> sender.sendMessage(plugin.getName() + ": latest version "
-                        + result.info().version() + " is on the ignore list (current: " + currentVersion + ").");
+                case IGNORED -> sender.sendMessage(plugin.getName() + ": the latest version, "
+                        + result.info().version() + ", is on your ignore list. You have " + currentVersion + ".");
                 case UP_TO_DATE -> sender.sendMessage(plugin.getName() + " is up to date (" + currentVersion + ").");
-                case FAILED -> sender.sendMessage(plugin.getName() + ": update check failed - "
+                case FAILED -> sender.sendMessage(plugin.getName() + ": the update check failed: "
                         + (result.error() != null ? result.error().getMessage() : "unknown error"));
             }
-        })));
+        }))));
     }
 
     /**
@@ -199,20 +229,20 @@ public final class Updater {
             sender.sendMessage(plugin.getName() + ": downloads are disabled (mode " + mode + ").");
             return;
         }
-        // An admin who types the download command outrides the settle-in wait —
+        // An admin who types the download command outrides the settle-in wait,
         // they asked for this version by hand, so give it to them.
         UpdateInfo info = pendingUpdate != null ? pendingUpdate : heldUpdate;
         if (info == null) {
-            sender.sendMessage(plugin.getName() + ": no update pending — run a check first.");
+            sender.sendMessage(plugin.getName() + ": no update has been found yet. Run a check first.");
             return;
         }
         if (info.version().equalsIgnoreCase(stagedVersion)) {
             sender.sendMessage(plugin.getName() + ": " + info.version()
-                    + " is already staged — " + applyHint() + ".");
+                    + " is already downloaded. To finish, " + applyHint() + ".");
             return;
         }
         sender.sendMessage(plugin.getName() + ": downloading " + info.version() + " in the background...");
-        scheduler.runAsync(() -> {
+        scheduler.runAsync(() -> guarded(() -> {
             String message = stage(info);
             scheduler.runGlobal(() -> {
                 sender.sendMessage(plugin.getName() + ": " + message);
@@ -220,7 +250,7 @@ public final class Updater {
                 // clicker), telling them whether it hot-reloads or needs a restart.
                 if (info.version().equalsIgnoreCase(stagedVersion)) announceStaged(info);
             });
-        });
+        }));
     }
 
     /** Whether the staged update can be applied right now without a restart. */
@@ -255,7 +285,7 @@ public final class Updater {
                     info.version(), result.backupFile().toString(), 0));
             stagedVersion = info.version();
             plugin.getLogger().info("Staged update " + info.version() + " -> " + result.stagedFile());
-            return "staged " + info.version() + " — " + applyHint() + ".";
+            return "downloaded " + info.version() + ". To finish, " + applyHint() + ".";
         } catch (Exception e) {
             plugin.getLogger().log(Level.WARNING, "Update staging failed", e);
             return "update failed: " + e.getMessage();
@@ -263,11 +293,12 @@ public final class Updater {
     }
 
     /**
-     * Stage the most recent backup jar for install on the next restart —
+     * Stage the most recent backup jar for install on the next restart,
      * the supported one-command recovery path after a bad update.
      */
     public void restoreBackup(CommandSender sender) {
-        scheduler.runAsync(() -> {
+        if (stopped) return;
+        scheduler.runAsync(() -> guarded(() -> {
             String message;
             try {
                 Path currentJar = PluginJarLocator.locate(plugin, jarFileSupplier);
@@ -279,7 +310,7 @@ public final class Updater {
                     buildPipeline().stageLocal(latest, currentJar);
                     pendingStore.clear();
                     stagedVersion = null;
-                    message = "staged backup " + latest.getFileName() + " — restart the server to apply it.";
+                    message = "the previous version (" + latest.getFileName() + ") is ready. Restart the server to go back to it.";
                 }
             } catch (Exception e) {
                 plugin.getLogger().log(Level.WARNING, "Backup restore failed", e);
@@ -287,23 +318,23 @@ public final class Updater {
             }
             String finalMessage = message;
             scheduler.runGlobal(() -> sender.sendMessage(plugin.getName() + ": " + finalMessage));
-        });
+        }));
     }
 
     /**
-     * Apply a staged update immediately via the configured {@link ReloadEngine}
-     * — no restart. Refused when no engine is configured, nothing is staged,
+     * Apply a staged update immediately via the configured {@link ReloadEngine},
+     * with no restart. Refused when no engine is configured, nothing is staged,
      * or the engine's safety checks fail. On success the running plugin
      * instance (including this updater) is replaced.
      */
     public void applyNow(CommandSender sender) {
         if (reloadEngine == null) {
-            sender.sendMessage(plugin.getName() + ": hot reload is not available — restart the server to apply.");
+            sender.sendMessage(plugin.getName() + ": installing without a restart isn't available here. Restart the server to apply the update.");
             return;
         }
         String staged = stagedVersion;
         if (staged == null) {
-            sender.sendMessage(plugin.getName() + ": nothing staged — run update download first.");
+            sender.sendMessage(plugin.getName() + ": nothing has been downloaded yet. Run the download command first.");
             return;
         }
         String refusal = reloadEngine.refusalReason(plugin);
@@ -318,21 +349,21 @@ public final class Updater {
                 Path stagedJar = Bukkit.getUpdateFolderFile().toPath()
                         .resolve(currentJar.getFileName().toString());
                 if (!java.nio.file.Files.exists(stagedJar)) {
-                    sender.sendMessage(plugin.getName() + ": staged jar not found — run update download again.");
+                    sender.sendMessage(plugin.getName() + ": the downloaded update is missing. Run the download command again.");
                     return;
                 }
                 PendingUpdateStore.Pending pending = pendingStore.load();
                 Path backup = pending != null && pending.backupPath() != null
                         ? Path.of(pending.backupPath()) : null;
                 sender.sendMessage(plugin.getName() + ": hot-reloading to " + staged
-                        + " — watch the console for the outcome.");
+                        + ": watch the console for the outcome.");
                 plugin.getLogger().warning("Hot reload starting: " + currentVersion + " -> " + staged);
                 // The marker is reconciled by the NEW instance's start().
                 reloadEngine.reload(plugin, stagedJar, backup);
             } catch (Exception e) {
                 plugin.getLogger().log(Level.SEVERE, "Hot reload failed", e);
                 sender.sendMessage(plugin.getName() + ": hot reload failed: " + e.getMessage()
-                        + " — a restart may be required.");
+                        + ". A restart may be needed.");
             }
         });
     }
@@ -362,7 +393,7 @@ public final class Updater {
             if (!info.version().equalsIgnoreCase(heldLoggedVersion)) {
                 heldLoggedVersion = info.version();
                 plugin.getLogger().info("Version " + info.version() + " is out, but it is being left alone "
-                        + "for now — new releases have to be available for " + minimumReleaseAge.toHours()
+                        + "for now: new releases have to be available for " + minimumReleaseAge.toHours()
                         + " hour(s) before this server takes them.");
             }
             if (callback != null) callback.accept(result);
@@ -380,7 +411,7 @@ public final class Updater {
                     plugin.getLogger().info(stage(info));
                     if (info.version().equalsIgnoreCase(stagedVersion)) {
                         if (canHotReloadNow()) {
-                            applyNow(Bukkit.getConsoleSender()); // true hands-off — no restart
+                            applyNow(Bukkit.getConsoleSender()); // true hands-off: no restart
                         } else {
                             announceStaged(info);                // staged; restart to apply
                         }
@@ -401,12 +432,13 @@ public final class Updater {
 
     private UpdateCheckResult doCheck() {
         Exception lastError = null;
-        SourceContext ctx = new SourceContext(http, track, plugin.getLogger());
+        SourceContext ctx = new SourceContext(http, track, plugin.getLogger(), serverVersion);
         for (UpdateSource source : sources) {
+            if (stopped) break;
             try {
                 UpdateInfo info = source.fetchLatest(ctx);
                 // Authenticated sources carry their headers over to the download
-                // (a private GitHub repo's Bearer token, a store's licence key, …).
+                // (a private GitHub repo's Bearer token, a store's licence key, ...).
                 downloadHeaders = source.downloadHeaders();
                 state.recordCheck(info.version());
                 Version latest = Version.parse(info.version(), track);
@@ -429,7 +461,7 @@ public final class Updater {
                         "Update source '" + source.name() + "' failed: " + e.getMessage());
             }
         }
-        if (lastError != null) {
+        if (lastError != null && isActive()) {
             plugin.getLogger().warning("Update check failed (all sources): " + lastError.getMessage());
         }
         return UpdateCheckResult.failed(lastError);
@@ -493,13 +525,35 @@ public final class Updater {
         long remainingMs = heldUntilEpochMs - System.currentTimeMillis();
         long hours = Math.max(1L, Math.round(remainingMs / 3_600_000.0));
         return "version " + held.version() + " is out (you have " + currentVersion + "), but it is brand new."
-                + " It will be offered in about " + hours + " hour(s) — new releases have to be available for "
+                + " It will be offered in about " + hours + " hour(s). New releases have to be available for "
                 + minimumReleaseAge.toHours() + " hour(s) first, so a quick fix-up release can land before"
                 + " this server takes one. Use the download command to install it right away anyway.";
     }
 
     public String currentVersion() {
         return currentVersion;
+    }
+
+    /** One plain-English line on where things stand, for status commands. */
+    public String statusLine() {
+        UpdateInfo pending = pendingUpdate;
+        if (pending != null) {
+            return "update available: " + pending.version() + " (you have " + currentVersion + ").";
+        }
+        String held = holdNotice();
+        if (held != null) return "waiting: " + held;
+        UpdateCheckResult last = lastResult;
+        if (last == null) {
+            return "no update check has run yet (you have " + currentVersion + "). Run the check command to check now.";
+        }
+        return switch (last.status()) {
+            case FAILED -> "the last update check failed"
+                    + (last.error() != null ? " (" + last.error().getMessage() + ")" : "")
+                    + ". You have " + currentVersion + ".";
+            case IGNORED -> "the latest version, " + last.info().version() + ", is on your ignore list. You have "
+                    + currentVersion + ".";
+            default -> "up to date (" + currentVersion + ") as of the last check.";
+        };
     }
 
     public String permission() {
@@ -552,6 +606,7 @@ public final class Updater {
         private int backupRetention = 3;
         private Supplier<File> jarFileSupplier;
         private ReloadEngine reloadEngine;
+        private boolean matchServerVersion = true;
         private final Map<String, String> messageOverrides = new HashMap<>();
 
         @SuppressWarnings("deprecation") // getDescription() works on both Paper and Spigot;
@@ -559,7 +614,7 @@ public final class Updater {
         private Builder(JavaPlugin plugin) {
             this.plugin = plugin;
             this.currentVersion = plugin.getDescription().getVersion();
-            this.permission = plugin.getName().toLowerCase() + ".update";
+            this.permission = plugin.getName().toLowerCase(java.util.Locale.ROOT) + ".update";
             this.prefix = "<gold>[" + plugin.getName() + "]</gold>";
         }
 
@@ -595,7 +650,7 @@ public final class Updater {
 
         /**
          * Ignore a release until it has been publicly available for this long
-         * (default {@link Duration#ZERO} — act on updates as soon as they appear).
+         * (default {@link Duration#ZERO}: act on updates as soon as they appear).
          *
          * <p>Guards against following a publisher's own mistakes: when a broken
          * release is pulled or hotfixed within hours, a server that waits never
@@ -638,6 +693,18 @@ public final class Updater {
          */
         public Builder selfRegisterCommand(boolean selfRegister) {
             this.selfRegisterCommand = selfRegister;
+            return this;
+        }
+
+        /**
+         * Prefer releases the source lists for the server's own Minecraft
+         * version (default true). Modrinth and Hangar tag every release with the
+         * game versions it supports, so a plugin that ships separate jars for
+         * 1.21, 26.1 and 26.3 gets the right one without a track. Sources that
+         * know nothing about game versions ignore this.
+         */
+        public Builder matchServerVersion(boolean match) {
+            this.matchServerVersion = match;
             return this;
         }
 

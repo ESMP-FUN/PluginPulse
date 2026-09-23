@@ -19,13 +19,14 @@ plugins:
   # AnotherPlugin:
   #   github: owner/repo            # its GitHub repository (uses Releases)
   #   mode: download                # download + stage; applies on next restart
-  #   track: mc26                   # OPTIONAL: follow a "-mc26" release line
+  #   track: mc26                   # OPTIONAL: only take versions ending in "-mc26".
+  #                                 # Rarely needed, see match-server-version below.
   #
   # PrivatePlugin:
   #   github: owner/private-repo    # a PRIVATE repo needs a token to read/download
   #   github-token: "${GITHUB_TOKEN}"  # env-var reference (recommended), OR a literal
   #                                    # PAT. Needs read-only Contents scope on the repo.
-  #   mode: auto-stage              # private gifts can't use the notify link — auto-stage
+  #   mode: auto-stage              # a private repo's notice link won't open for others, so use auto-stage
   #
   # HangarPlugin:
   #   hangar: project-slug          # its Hangar project slug
@@ -40,22 +41,26 @@ plugins:
   #                                 # download/auto modes refuse the file
 
 # What "mode" means:
-#   off          — ignore this plugin
-#   check-only   — check silently; results shown only via /pluginpulse
-#   notify       — check + tell admins on join and in console; the notice has a
+#   off         : ignore this plugin
+#   check-only  : check silently; results shown only via /pluginpulse
+#   notify      : check + tell admins on join and in console; the notice has a
 #                  button to download + install in the background, no page visit
-#   download     — check + download + stage; the update applies on next restart
-#   auto-stage   — like download, but staged automatically as soon as it's found
+#   download    : check + download + stage; the update applies on next restart
+#   auto-stage  : like download, but staged automatically as soon as it's found
 
 # Optional per-plugin keys:
-#   github-token — for a PRIVATE github repo. A ${ENV_VAR} reference (recommended)
+#   github-token: for a PRIVATE github repo. A ${ENV_VAR} reference (recommended)
 #                  or a literal PAT with read-only Contents scope on that repo.
-#   hot-reload   — true to install without a restart. Auto-refuses at runtime when
+#   hot-reload  : true to install without a restart. Auto-refuses at runtime when
 #                  unsafe (Folia, other plugins depend on it, or it bundles a
 #                  native library such as the SQLite driver) and falls back to a
 #                  restart-install. Default false.
-#   hold-new-updates / hold-new-updates-hours
-#                — the waiting time below, but set for this one plugin only.
+#   match-server-version: true (the default) picks the download made for your
+#                  server's Minecraft version when the plugin publishes several,
+#                  for example one for 1.21 and one for 26.3. Works with modrinth
+#                  and hangar. Set false to always take the newest release.
+#   hold-new-updates and hold-new-updates-hours: the waiting time below, but
+#                  set for this one plugin only.
 #                  Handy to wait longer on a plugin that has broken your server
 #                  before, or not at all on one you trust.
 
@@ -71,14 +76,14 @@ check-interval-hours: 6
 # Sometimes an author publishes an update that turns out to be broken and puts
 # out a fix a few hours later. With this switched on, PluginPulse ignores a
 # release until it has been publicly available for the number of hours below, so
-# those quick fix-ups land BEFORE your server takes the update — instead of you
+# those quick fix-ups land BEFORE your server takes the update, instead of you
 # installing the broken one and then waiting for the next check to fix it.
 #
 # false = take updates as soon as they appear (how PluginPulse has always worked)
 # true  = leave a release alone until it has been out for the hours below
 #
 # It applies to everything PluginPulse does on its own: the notices to admins,
-# the downloads and the automatic installs. You are never locked out — running
+# the downloads and the automatic installs. You are never locked out, running
 # the download command yourself installs the new version straight away, and
 # /pluginpulse tells you when a release is being waited out and how much longer.
 hold-new-updates: false

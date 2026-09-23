@@ -64,7 +64,7 @@ class PluginManagerAccessTest {
     @Test
     void collectsBothLegacyAndDelegatedHolders() {
         // Modern Paper keeps dead legacy fields on SimplePluginManager while
-        // the real bookkeeping lives in the delegated instance manager — the
+        // the real bookkeeping lives in the delegated instance manager, the
         // walk must return BOTH so removal scrubs the live one.
         FakeModernSimplePluginManager manager = new FakeModernSimplePluginManager();
         List<Object> holders = PluginManagerAccess.findBookkeepingHolders(manager);

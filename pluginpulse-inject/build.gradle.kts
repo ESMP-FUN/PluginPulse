@@ -25,7 +25,7 @@ tasks.shadowJar {
 tasks.processResources {
     dependsOn(":pluginpulse-core:jar")
     from(project(":pluginpulse-core").tasks.named("jar")) {
-        // NB: not a ".jar" extension — the shadow plugin strips nested *.jar
+        // NB: not a ".jar" extension: the shadow plugin strips nested *.jar
         // resources from the fat jar. jar-relocator reads it as a zip regardless.
         rename { "pluginpulse-core.jar.payload" }
         into("payload")

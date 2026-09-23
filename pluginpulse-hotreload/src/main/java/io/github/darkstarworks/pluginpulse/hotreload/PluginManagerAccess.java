@@ -40,11 +40,11 @@ final class PluginManagerAccess {
         List<Object> holders = findBookkeepingHolders(pluginManager);
         if (holders.isEmpty()) {
             throw new IllegalStateException("Unrecognized plugin manager internals ("
-                    + pluginManager.getClass().getName() + ") — cannot hot reload on this server version.");
+                    + pluginManager.getClass().getName() + "): cannot hot reload on this server version.");
         }
         // On modern Paper the legacy SimplePluginManager STILL declares (dead)
         // plugins/lookupNames fields while the live bookkeeping sits in the
-        // delegated PaperPluginInstanceManager — scrub every holder found.
+        // delegated PaperPluginInstanceManager: scrub every holder found.
         for (Object holder : holders) {
             Object pluginsField = getFieldValue(holder, "plugins");
             if (pluginsField instanceof List<?> plugins) {
@@ -77,7 +77,7 @@ final class PluginManagerAccess {
                     Object next = getFieldValue(candidate, delegate);
                     if (next != null) queue.add(next);
                 } catch (ReflectiveOperationException ignored) {
-                    // field absent on this layout — keep walking
+                    // field absent on this layout: keep walking
                 }
             }
         }

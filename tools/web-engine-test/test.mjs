@@ -75,7 +75,7 @@ async function main() {
   ok(pulseYml.includes('github-token: "${GITHUB_TOKEN}"'), 'pluginpulse.yml quotes the github token');
   ok(pulseYml.includes('hot-reload: true'), 'pluginpulse.yml carries hot-reload');
   // hot-reload only does anything if the module rode along in the payload and
-  // was relocated with the rest — ReloadEngines looks for it beside itself.
+  // was relocated with the rest: ReloadEngines looks for it beside itself.
   ok(names.includes(pkg + '/pluginpulse/hotreload/HotReloadEngine.class'),
     'hot-reload module relocated into the target package');
 
@@ -115,8 +115,8 @@ async function main() {
   ok(CP.parseClass(cleared).entries.length === forced.entries.length,
     'definalize leaves the constant pool unchanged');
 
-  // Jenkins source: yaml carries the job URL, artifact regex, and — because
-  // Jenkins publishes no checksums — require-hash: false in download mode.
+  // Jenkins source: yaml carries the job URL, artifact regex, and, because
+  // Jenkins publishes no checksums: require-hash: false in download mode.
   const jJar = await buildSampleJar('com.example.demo.DemoPlugin');
   const jOut = await PPI.injectJar(jJar, {
     jenkins: 'https://ci.athion.net/job/FastAsyncWorldEdit/', jenkinsArtifact: 'Paper',

@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Companion plugin — PluginPulse docs</title>
-  <meta name="description" content="The PluginPulse companion plugin checks, downloads and installs updates for the plugins you already run — one config file, no changes to the plugins themselves.">
+  <title>Companion plugin | PluginPulse docs</title>
+  <meta name="description" content="The PluginPulse companion plugin checks, downloads and installs updates for the plugins you already run, one config file, no changes to the plugins themselves.">
   <link rel="canonical" href="https://esmp-fun.github.io/PluginPulse/companion-plugin/">
   <link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
   <meta name="theme-color" content="#0f1216">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="PluginPulse">
   <meta property="og:title" content="Keep every plugin on your server up to date">
-  <meta property="og:description" content="The PluginPulse companion plugin checks, downloads and installs updates for the plugins you already run — one config file, no changes to the plugins themselves.">
+  <meta property="og:description" content="The PluginPulse companion plugin checks, downloads and installs updates for the plugins you already run, one config file, no changes to the plugins themselves.">
   <meta property="og:url" content="https://esmp-fun.github.io/PluginPulse/companion-plugin/">
   <meta property="og:image" content="https://esmp-fun.github.io/PluginPulse/assets/og.png">
   <meta property="og:image:width" content="1200">
@@ -46,7 +46,7 @@
   </aside>
 
   <main class="content">
-    <h1>Path 2 — The companion plugin (for server owners)</h1>
+    <h1>Path 2: The companion plugin (for server owners)</h1>
     <p class="lede"><strong>Audience:</strong> you run a Minecraft server and want your installed
       plugins kept up to date. <strong>No code, no building.</strong> You install one plugin and
       list the others in a config file.</p>
@@ -56,7 +56,7 @@
     <h2>What it is</h2>
     <p><strong>PluginPulse Companion</strong> is a normal plugin you drop into
       <code>plugins/</code>. It reads a list of your <em>other</em> plugins and where each one
-      publishes updates, then checks (and optionally downloads) updates on their behalf — without
+      publishes updates, then checks (and optionally downloads) updates on their behalf, without
       those plugins needing to know anything about it.</p>
     <p>It never swaps a running jar live: downloaded updates are <strong>staged</strong> and
       applied the next time you restart. Safe by default.</p>
@@ -67,14 +67,14 @@
 
     <h2>2. Install</h2>
     <ol>
-      <li>Stop your server (or have it running — either is fine for the first install).</li>
+      <li>Stop your server (or have it running, either is fine for the first install).</li>
       <li>Put the jar in your server's <code>plugins/</code> folder.</li>
       <li>Start (or restart) the server.</li>
     </ol>
     <p>On a successful start you'll see in the console:</p>
     <pre><code>[PluginPulseCompanion] Enabling PluginPulseCompanion vX.Y.Z
-[PluginPulseCompanion] No plugins configured yet — edit config.yml and run /pluginpulse reload.</code></pre>
-    <p>That last line is expected on a fresh install — you configure it next.</p>
+[PluginPulseCompanion] No plugins configured yet: edit config.yml and run /pluginpulse reload.</code></pre>
+    <p>That last line is expected on a fresh install. You configure it next.</p>
 
     <h2>3. Configure</h2>
     <p>Open <code>plugins/PluginPulseCompanion/config.yml</code>. Here's a complete, worked example
@@ -110,9 +110,10 @@ hold-new-updates-hours: 18</code></pre>
       <tbody>
         <tr><td><code>plugins:</code></td><td>the list of plugins to manage; each key is a plugin's exact name</td></tr>
         <tr><td><code>modrinth</code> / <code>github</code> / <code>hangar</code></td>
-            <td>where <em>that</em> plugin's updates come from — see
-              <a href="../update-sources/">finding your update source</a>. Use exactly one per plugin</td></tr>
+            <td>where <em>that</em> plugin's updates come from (see
+              <a href="../update-sources/">finding your update source</a>). Use exactly one per plugin</td></tr>
         <tr><td><code>mode</code></td><td>what to do when an update is found (see below)</td></tr>
+        <tr><td><code>match-server-version</code></td><td><em>(optional, per plugin, default <code>true</code>)</em> when a plugin publishes separate downloads for different Minecraft versions, for example one for 1.21 and one for 26.3, take the one made for your server. Works with Modrinth and Hangar. Set <code>false</code> to always take the newest release.</td></tr>
         <tr><td><code>track</code></td><td><em>(optional, per plugin)</em> follow a <code>-&lt;track&gt;</code> release line, e.g. <code>track: mc26</code></td></tr>
         <tr><td><code>user-agent-contact</code></td><td>how the update APIs can reach you; required by Modrinth</td></tr>
         <tr><td><code>check-interval-hours</code></td><td>how often to check (minimum 1)</td></tr>
@@ -129,22 +130,22 @@ hold-new-updates-hours: 18</code></pre>
       hours later. If your server picked up the broken one in the meantime, you are stuck with it
       until the next check comes round.</p>
     <p>Switch on <code>hold-new-updates</code> and PluginPulse ignores a release until it has been
-      publicly available for <code>hold-new-updates-hours</code> (18 by default) — long enough that a
+      publicly available for <code>hold-new-updates-hours</code> (18 by default), long enough that a
       quick fix-up release lands first. It uses the release date the plugin's own page publishes, so
       the clock starts when the author released it, not when your server first noticed.</p>
     <p>The wait covers everything PluginPulse does on its own: the notices to admins, the downloads
-      and the automatic installs. You are never locked out — <code>/pluginpulse download &lt;plugin&gt;</code>
+      and the automatic installs. You are never locked out: <code>/pluginpulse download &lt;plugin&gt;</code>
       installs the new version straight away, and <code>/pluginpulse</code> shows which releases are
       being waited out and for how much longer.</p>
 
-    <p><strong>What each <code>mode</code> does</strong> — in plain terms:</p>
+    <p><strong>What each <code>mode</code> does</strong>, in plain terms:</p>
     <ul>
-      <li><code>off</code> — ignore this plugin.</li>
-      <li><code>check-only</code> — check quietly; the result only shows in <code>/pluginpulse</code>.</li>
-      <li><code>notify</code> — check and tell admins (console + on join). <strong>Nothing is downloaded.</strong></li>
-      <li><code>download</code> — check, download, verify, and <strong>stage</strong> the update.
+      <li><code>off</code>: ignore this plugin.</li>
+      <li><code>check-only</code>: check quietly; the result only shows in <code>/pluginpulse</code>.</li>
+      <li><code>notify</code>: check and tell admins (console + on join). <strong>Nothing is downloaded.</strong></li>
+      <li><code>download</code>: check, download, verify, and <strong>stage</strong> the update.
         It applies the next time you restart the server.</li>
-      <li><code>auto-stage</code> — like <code>download</code>, but staged automatically as soon as it's found.</li>
+      <li><code>auto-stage</code>: like <code>download</code>, but staged automatically as soon as it's found.</li>
     </ul>
     <p>After editing, either restart or run <code>/pluginpulse reload</code>.</p>
 
@@ -152,27 +153,27 @@ hold-new-updates-hours: 18</code></pre>
     <p>The command is <code>/pluginpulse</code> (aliases <code>/ppc</code>, <code>/pulse</code>),
       permission <code>pluginpulse.admin</code> (ops have it by default).</p>
     <ul>
-      <li><code>/pluginpulse</code> or <code>/pluginpulse list</code> — show each managed plugin
+      <li><code>/pluginpulse</code> or <code>/pluginpulse list</code>: show each managed plugin
         and whether an update is available.</li>
-      <li><code>/pluginpulse check [plugin|all]</code> — check now.</li>
-      <li><code>/pluginpulse download [plugin|all]</code> — download + stage available updates.</li>
-      <li><code>/pluginpulse restore [plugin|all]</code> — stage the previous backup of a plugin
+      <li><code>/pluginpulse check [plugin|all]</code>: check now.</li>
+      <li><code>/pluginpulse download [plugin|all]</code>: download + stage available updates.</li>
+      <li><code>/pluginpulse restore [plugin|all]</code>: stage the previous backup of a plugin
         (undo a bad update), applied on restart.</li>
-      <li><code>/pluginpulse reload</code> — re-read <code>config.yml</code>.</li>
+      <li><code>/pluginpulse reload</code>: re-read <code>config.yml</code>.</li>
     </ul>
     <p><strong>How staged updates apply:</strong> downloading stages the new jar into the server's
       update folder. <strong>Restart the server</strong> and the server swaps it in on boot.
-      There's no live jar-swapping — that's deliberate, so nothing changes underneath a running
+      There's no live jar-swapping. That's deliberate, so nothing changes underneath a running
       server.</p>
 
     <h2>FAQ</h2>
     <ul>
-      <li><strong>Does it work on Spigot?</strong> Yes — Paper, Spigot, and Folia.</li>
+      <li><strong>Does it work on Spigot?</strong> Yes: Paper, Spigot, and Folia.</li>
       <li><strong>My plugin isn't on Modrinth/Hangar.</strong> Use <code>github: owner/repo</code>
         if its releases are on GitHub. If it's published nowhere with an API, the companion can't
         track it.</li>
-      <li><strong>Is it safe?</strong> By default (<code>notify</code>), nothing is downloaded —
-        you're only informed. Even in <code>download</code>/<code>auto-stage</code>, updates are
+      <li><strong>Is it safe?</strong> By default (<code>notify</code>), nothing is downloaded.
+        You're only told about it. Even in <code>download</code>/<code>auto-stage</code>, updates are
         checksum-verified, the old jar is backed up, and nothing is swapped until you restart.</li>
       <li><strong>A plugin shows as "skipped".</strong> The companion prints why (not installed,
         no source configured, <code>mode: off</code>, etc.). Check the name matches

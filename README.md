@@ -1,16 +1,16 @@
 # PluginPulse
 
-Keep Minecraft server plugins up to date, three ways — depending on who you are.
+Keep Minecraft server plugins up to date, three ways, depending on who you are.
 
 ## Which of these are you?
 
-| You… | Use | Guide |
+| You... | Use | Guide |
 |---|---|---|
 | **build your own plugin** and want it to self-update | shade the library | **[Adopting the library](https://esmp-fun.github.io/PluginPulse/adopting-the-library/)** |
 | **run a server** and just want your installed plugins updated | the companion plugin | **[Companion plugin](https://esmp-fun.github.io/PluginPulse/companion-plugin/)** |
 | **have a jar** you can't or won't rebuild | the browser tool | **[Web tool](https://esmp-fun.github.io/PluginPulse/web-tool/)** |
 
-Each guide stands alone and assumes no prior knowledge — follow only *yours*.
+Each guide stands alone and assumes no prior knowledge. Follow only *yours*.
 New to a term? See the **[glossary](https://esmp-fun.github.io/PluginPulse/glossary/)**. Not sure where your
 plugin's updates live? See **[finding your update source](https://esmp-fun.github.io/PluginPulse/update-sources/)**.
 
@@ -23,17 +23,17 @@ A small, dependency-free update-checker library for Paper **and Spigot**
 plugins. Shade it in, point it at where you publish releases, and your plugin
 gains:
 
-- **Multi-source update checking** — Modrinth, GitHub Releases, Hangar, Jenkins
+- **Multi-source update checking**: Modrinth, GitHub Releases, Hangar, Jenkins
   CI, or any self-hosted JSON manifest, with ordered fallbacks.
-- **Clickable admin notifications** — MiniMessage console + in-game notices on
+- **Clickable admin notifications**: MiniMessage console + in-game notices on
   login, permission-gated, fully re-brandable.
-- **Version intelligence** — semver-ish comparison, pre-release awareness
+- **Version intelligence**: semver-ish comparison, pre-release awareness
   (`1.2.0-beta1 < 1.2.0`), and distribution *tracks* for projects that ship
   parallel builds (e.g. `1.7.3` and `1.7.3-mc26`).
-- **Rate-limit citizenship** — identifying User-Agent (required by Modrinth),
+- **Rate-limit citizenship**: identifying User-Agent (required by Modrinth),
   persisted check state, jittered intervals.
-- **Folia support** — automatic scheduler detection, or plug in your own adapter.
-- **Verified one-command installs** — downloads are checksum-verified
+- **Folia support**: automatic scheduler detection, or plug in your own adapter.
+- **Verified one-command installs**: downloads are checksum-verified
   (sha512 > sha256 > sha1), the running jar is backed up, and the new jar is
   staged into the server's `plugins/update/` folder to apply on the next
   restart. One-command rollback to the latest backup.
@@ -43,7 +43,7 @@ gains:
 - Paper (or a fork) 1.20.5+, **or Spigot 1.20.5+**, Java 21+.
 - No runtime dependencies. On Paper, notices render as rich clickable
   MiniMessage; on Spigot (no Adventure) they automatically fall back to plain
-  text with the download URL spelled out — everything else works identically.
+  text with the download URL spelled out. Everything else works identically.
 
 ## Installation
 
@@ -55,7 +55,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.darkstarworks.PluginPulse:pluginpulse-core:v0.8.0")
+    implementation("com.github.darkstarworks.PluginPulse:pluginpulse-core:v0.9.0")
 }
 ```
 
@@ -72,7 +72,7 @@ tasks.shadowJar {
 **1.** Drop a `pluginpulse.yml` into `src/main/resources/`:
 
 ```yaml
-# Fill in whichever sources apply — the first one is primary, the rest are
+# Fill in whichever sources apply: the first one is primary, the rest are
 # fallbacks. You need at least one.
 modrinth: my-project-slug        # Modrinth project slug (optional)
 github: me/my-plugin             # GitHub "owner/repo" for Releases (optional)
@@ -88,7 +88,10 @@ check-interval-hours: 6
 # hold-new-updates: false        # true = ignore a release until it has been publicly
 # hold-new-updates-hours: 18     # available for this long, so a broken release that
 #                                # gets hotfixed hours later is never installed
-# track: mc26                    # optional: follow a "-<track>" release line
+# match-server-version: true     # default true: when the plugin publishes separate jars
+#                                # for 1.21 and 26.x, take the one listed for this
+#                                # server's Minecraft version (Modrinth and Hangar)
+# track: mc26                    # optional: only take versions ending in "-<track>"
 # self-register-command: true    # default true; see below
 ```
 
@@ -104,13 +107,13 @@ check-interval-hours: 6
 
 **Self-registered command.** When `command-root` is set, PluginPulse registers a
 matching command (`/myplugin update ...`) straight into the server's command map
-if — and only if — that name is not already taken. So:
+if (and only if) that name is not already taken. So:
 
 - If your plugin **already declares** `command-root` in its `plugin.yml`, that
   command is left untouched and you delegate `update` to
   `PluginPulse.handleUpdateCommand(...)` as shown above.
 - If it **doesn't** (injected jars, or a one-file adopter who'd rather not write a
-  command class), you get a working `/myplugin update` for free — no descriptor
+  command class), you get a working `/myplugin update` for free, no descriptor
   entry, no executor.
 
 Registration is fail-soft across Spigot/Paper/Folia and never throws into your
@@ -128,8 +131,8 @@ a publisher ships a broken release and hotfixes it a few hours later: a server
 that waits never installs the broken one, instead of picking it up and then
 sitting on it until the next check.
 
-The clock is the publisher's own release timestamp — Modrinth, GitHub, Hangar and
-Jenkins all report one — falling back to the first time this server saw the
+The clock is the publisher's own release timestamp (Modrinth, GitHub, Hangar and
+Jenkins all report one), falling back to the first time this server saw the
 version, which can only lengthen the wait, never shorten it. The hold suppresses
 notices, downloads and auto-staging alike; an admin running `update download` by
 hand still gets the release immediately, and `update status` explains what is
@@ -200,9 +203,9 @@ on the next boot; if it didn't, the plugin warns instead of re-staging forever.
 | Source | Constructor | Hashes | Notes |
 |---|---|---|---|
 | Modrinth | `new ModrinthSource("slug")` | sha1 + sha512 | 300 req/min limit; optional loader/game-version filters |
-| GitHub Releases | `new GitHubReleasesSource("owner/repo")` | `digest` field or `.sha256` sidecar asset | 60 req/hr unauthenticated — keep intervals long; optional token |
+| GitHub Releases | `new GitHubReleasesSource("owner/repo")` | `digest` field or `.sha256` sidecar asset | 60 req/hr unauthenticated, keep intervals long; optional token |
 | Hangar | `new HangarSource("slug")` | sha256 | platform selectable (`PAPER`/`VELOCITY`/`WATERFALL`) |
-| Jenkins | `new JenkinsSource("https://ci.…/job/X/")` | none — download modes need `require-hash: false` | last successful build; optional artifact-name filter |
+| Jenkins | `new JenkinsSource("https://ci.example.org/job/X/")` | none: download modes need `require-hash: false` | last successful build; optional artifact-name filter |
 | Custom JSON | `new CustomJsonSource(url, headers)` | any | self-hosted manifest; headers carry auth (e.g. licence keys) |
 
 ### Custom manifest format
@@ -213,11 +216,11 @@ on the next boot; if it didn't, the plugin warns instead of re-staging forever.
   "changelog": "Fixed ...",
   "download": "https://example.com/dl/plugin-1.0.4.jar",
   "filename": "plugin-1.0.4.jar",
-  "sha256": "…",
+  "sha256": "...",
   "size": 123456,
   "restart-required": true,
   "page": "https://example.com/plugin",
-  "tracks": { "mc26": { "version": "1.0.4-mc26", "download": "…", "sha256": "…" } }
+  "tracks": { "mc26": { "version": "1.0.4-mc26", "download": "...", "sha256": "..." } }
 }
 ```
 
@@ -243,7 +246,7 @@ All notices are MiniMessage templates with `<prefix>`, `<current>`, `<latest>`,
 The separate `pluginpulse-hotreload` artifact can apply a staged update
 **without a restart**: it unloads the running plugin (disable, unregister
 listeners/tasks/services/channels/commands, remove plugin-manager bookkeeping,
-close the classloader — which also releases the Windows jar lock), swaps the
+close the classloader, which also releases the Windows jar lock), swaps the
 jar, and loads + enables the new version. If the new version fails to load it
 rolls back to the automatic backup.
 
@@ -260,7 +263,7 @@ restart path.
 
 **Hard limits, by design:**
 
-- Refused on **Folia** — regionized schedulers can't be torn down safely.
+- Refused on **Folia**: regionized schedulers can't be torn down safely.
 - Refused while other enabled plugins **depend on yours** (hard or soft).
 - Your plugin must shut down cleanly: static state, thread pools, coroutine
   dispatchers and objects other plugins captured from the old instance are
@@ -273,5 +276,5 @@ convenience for small, self-contained updates.
 
 ## License
 
-Source-available — free to view, study, and run; no commercial use or
+Source-available: free to view, study, and run; no commercial use or
 redistribution. See [LICENSE](LICENSE) for the full terms.

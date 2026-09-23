@@ -8,10 +8,12 @@ import io.github.darkstarworks.pluginpulse.UpdateInfo;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Predicate;
 
 /**
  * Modrinth (api.modrinth.com/v2). Rate limit is 300 requests/minute per IP;
@@ -52,42 +54,57 @@ public final class ModrinthSource implements UpdateSource {
             url.append(sep).append("game_versions=").append(encodeJsonList(gameVersions));
         }
         String json = ctx.http().get(url.toString());
-        UpdateInfo info = parse(json, ctx.track(), projectSlug);
+        UpdateInfo info = parse(json, ctx.track(), projectSlug, ctx.serverVersion());
         if (info == null) {
-            throw new IllegalStateException("Modrinth project " + projectSlug + " has no matching versions");
+            throw new IllegalStateException("Modrinth project " + projectSlug + " has no matching versions"
+                    + (ctx.track() != null ? " on the -" + ctx.track() + " release line" : ""));
         }
         return info;
     }
 
-    /**
-     * Parse the version-list response (newest first). When a track is set,
-     * prefers the newest version whose number ends with {@code -<track>};
-     * otherwise prefers versions without any {@code -} suffix beyond the first
-     * plain entry.
-     */
     static UpdateInfo parse(String json, String track, String projectSlug) {
-        JsonArray versions = JsonParser.parseString(json).getAsJsonArray();
+        return parse(json, track, projectSlug, null);
+    }
+
+    /**
+     * Pick from the version list (newest first).
+     *
+     * <p>When {@code serverVersion} is given and some versions list it among
+     * their game versions, only those are considered: that is the jar built for
+     * this server. A track still narrows the choice to {@code -<track>}
+     * versions; when the track has none it falls back to a plain version
+     * without any suffix, never to another track's jar. Without a track,
+     * the newest full release built for this server wins; when no version lists
+     * the server's game version, versions without a {@code -} suffix are
+     * preferred, as before.</p>
+     */
+    static UpdateInfo parse(String json, String track, String projectSlug, String serverVersion) {
+        List<JsonObject> all = new ArrayList<>();
+        JsonParser.parseString(json).getAsJsonArray().forEach(el -> all.add(el.getAsJsonObject()));
+        List<JsonObject> forServer = serverVersion == null ? List.of()
+                : all.stream().filter(v -> listsGameVersion(v, serverVersion)).toList();
+        boolean matched = !forServer.isEmpty();
+        List<JsonObject> pool = matched ? forServer : all;
+
         JsonObject chosen = null;
-        for (JsonElement el : versions) {
-            JsonObject v = el.getAsJsonObject();
-            String number = v.get("version_number").getAsString();
-            if (track != null && !track.isBlank()) {
-                if (number.toLowerCase(Locale.ROOT).endsWith("-" + track.toLowerCase(Locale.ROOT))) {
-                    chosen = v;
-                    break;
-                }
-            } else if (!number.contains("-")) {
-                // No track configured: skip suffixed builds (other tracks,
-                // pre-releases) — otherwise a dual-track project's newest
-                // "-mc26" upload would be served to every server.
-                chosen = v;
-                break;
+        if (track != null && !track.isBlank()) {
+            String suffix = "-" + track.toLowerCase(Locale.ROOT);
+            chosen = first(pool, v -> number(v).toLowerCase(Locale.ROOT).endsWith(suffix));
+            if (chosen == null && matched) {
+                chosen = first(all, v -> number(v).toLowerCase(Locale.ROOT).endsWith(suffix));
             }
-        }
-        if (chosen == null && !versions.isEmpty()) {
-            // Requested track never published (or every version is suffixed):
-            // fall back to the newest entry.
-            chosen = versions.get(0).getAsJsonObject();
+            // A project that publishes one plain version for every server is fine;
+            // another line's "-something" jar never is.
+            if (chosen == null) chosen = first(pool, v -> !number(v).contains("-"));
+        } else if (matched) {
+            chosen = first(pool, ModrinthSource::isRelease);
+            if (chosen == null) chosen = pool.get(0);
+        } else {
+            // No track and nothing tagged for this server: skip suffixed builds
+            // (other tracks, pre-releases), or a dual-track project's newest
+            // "-mc26" upload would be served to every server.
+            chosen = first(pool, v -> !number(v).contains("-"));
+            if (chosen == null && !pool.isEmpty()) chosen = pool.get(0);
         }
         if (chosen == null) return null;
 
@@ -121,6 +138,30 @@ public final class ModrinthSource implements UpdateSource {
                 "https://modrinth.com/project/" + projectSlug + "/version/" + versionId,
                 PublishTime.from(chosen, "date_published")
         );
+    }
+
+    private static String number(JsonObject v) {
+        return v.get("version_number").getAsString();
+    }
+
+    private static boolean isRelease(JsonObject v) {
+        return !v.has("version_type") || "release".equalsIgnoreCase(v.get("version_type").getAsString());
+    }
+
+    private static boolean listsGameVersion(JsonObject v, String gameVersion) {
+        JsonArray list = v.getAsJsonArray("game_versions");
+        if (list == null) return false;
+        for (JsonElement el : list) {
+            if (gameVersion.equals(el.getAsString())) return true;
+        }
+        return false;
+    }
+
+    private static JsonObject first(List<JsonObject> versions, Predicate<JsonObject> test) {
+        for (JsonObject v : versions) {
+            if (test.test(v)) return v;
+        }
+        return null;
     }
 
     private static JsonObject pickPrimaryFile(JsonArray files) {

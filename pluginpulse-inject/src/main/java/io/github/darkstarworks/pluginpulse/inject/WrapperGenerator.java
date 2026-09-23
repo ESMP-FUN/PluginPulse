@@ -22,9 +22,9 @@ import static org.objectweb.asm.Opcodes.V1_8;
  * }
  * }</pre>
  *
- * <p>Super calls use {@code INVOKESPECIAL} (not virtual — a virtual self-call
+ * <p>Super calls use {@code INVOKESPECIAL} (not virtual, a virtual self-call
  * would recurse infinitely). Bodies are branch-free void methods, so no stack
- * map frames are needed and {@code COMPUTE_MAXS} suffices — we never have to
+ * map frames are needed and {@code COMPUTE_MAXS} suffices, we never have to
  * classload Bukkit to compute frames.</p>
  */
 final class WrapperGenerator {

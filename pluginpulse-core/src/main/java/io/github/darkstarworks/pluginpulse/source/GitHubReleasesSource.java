@@ -79,7 +79,7 @@ public final class GitHubReleasesSource implements UpdateSource {
         UpdateInfo info = parsed.info;
         // Private repos: browser_download_url isn't reliably token-authable, but the
         // asset's API url is (with the octet-stream Accept from downloadHeaders()).
-        // Swap to it only when we hold a token and GitHub gave us that url — public
+        // Swap to it only when we hold a token and GitHub gave us that url, public
         // downloads stay on the plain browser URL.
         if (hasToken() && parsed.apiAssetUrl != null) {
             info = withDownloadUrl(info, parsed.apiAssetUrl);
@@ -163,7 +163,7 @@ public final class GitHubReleasesSource implements UpdateSource {
         long size = -1;
         if (asset != null) {
             downloadUrl = asset.get("browser_download_url").getAsString();
-            // The asset's API url ("…/releases/assets/<id>") is the authenticated
+            // The asset's API url (".../releases/assets/<id>") is the authenticated
             // download path for private repos; may be absent on older payloads.
             if (asset.has("url") && !asset.get("url").isJsonNull()) {
                 apiAssetUrl = asset.get("url").getAsString();

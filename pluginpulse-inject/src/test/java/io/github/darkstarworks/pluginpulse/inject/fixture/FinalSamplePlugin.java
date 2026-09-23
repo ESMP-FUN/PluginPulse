@@ -6,7 +6,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class FinalSamplePlugin extends JavaPlugin {
     @Override
     public void onEnable() {
-        // A branch so the compiled method carries stack map frames — exercises
+        // A branch so the compiled method carries stack map frames, exercises
         // the instrumenter's EXPAND_FRAMES handling.
         if (System.currentTimeMillis() > 0) {
             getLogger().info("enabled");

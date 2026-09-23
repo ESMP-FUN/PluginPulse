@@ -67,7 +67,7 @@ final class CommandRegistration {
             if (commandMap == null) return;
             if (commandMap.getCommand(label) != null) {
                 // Name already owned (e.g. the host declares it in plugin.yml).
-                // Leave it alone — the host wires update delegation itself.
+                // Leave it alone: the host wires update delegation itself.
                 plugin.getLogger().fine("PluginPulse: command '" + label
                         + "' already registered; skipping self-registration.");
                 return;
@@ -79,7 +79,7 @@ final class CommandRegistration {
             plugin.getLogger().fine("PluginPulse: self-registered command '/" + label + "'.");
         } catch (Throwable t) {
             plugin.getLogger().log(Level.FINE,
-                    "PluginPulse: could not self-register command '/" + label + "' — "
+                    "PluginPulse: could not self-register command '/" + label + "', "
                             + "run updates via the host's own command instead.", t);
         }
     }
@@ -95,7 +95,12 @@ final class CommandRegistration {
             command.unregister(commandMap);
             Map<String, Command> known = knownCommands(commandMap);
             if (known != null) {
-                known.entrySet().removeIf(e -> e.getValue() == command);
+                // Paper backs this with a Brigadier map whose iterators refuse
+                // remove(), so the old entrySet().removeIf failed silently and a
+                // hot-reloaded plugin kept the old instance's command. Remove by key.
+                Map.copyOf(known).forEach((key, value) -> {
+                    if (value == command) known.remove(key);
+                });
             }
             syncCommands();
         } catch (Throwable t) {
@@ -155,7 +160,9 @@ final class CommandRegistration {
 
         @Override
         public boolean execute(CommandSender sender, String commandLabel, String[] args) {
-            handler.handle(sender, tail(args));
+            if (!handler.handle(sender, tail(args))) {
+                sender.sendMessage("You don't have permission to manage " + plugin.getName() + " updates.");
+            }
             return true;
         }
 

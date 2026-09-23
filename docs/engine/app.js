@@ -10,14 +10,14 @@
 
   // Global "plugins future-proofed" tally, hosted on esmp.fun. Purely cosmetic:
   // the page reads it on load and bumps it once per successful Generate. Every
-  // call is best-effort — no jar data is ever sent, and any failure just leaves
+  // call is best-effort, no jar data is ever sent, and any failure just leaves
   // the counter hidden rather than surfacing an error.
   const PULSE_URL = 'https://api.esmp.fun/v2/pulse';
   let pulseCount = null;
 
   // Counting continues; showing the tally does not. A small number reads worse
-  // than no number at all, so the element stays hidden until it's worth showing
-  // — flip SHOW_COUNTER back on then.
+  // than no number at all, so the element stays hidden until it's worth showing.
+  // Flip SHOW_COUNTER back on then.
   const SHOW_COUNTER = false;
 
   function renderCounter(n) {
@@ -37,7 +37,7 @@
     try {
       const d = await (await fetch(PULSE_URL, { method: 'GET' })).json();
       if (d && typeof d.count === 'number') renderCounter(d.count);
-    } catch (_) { /* counter is optional — stay hidden on failure */ }
+    } catch (_) { /* counter is optional, stay hidden on failure */ }
   }
 
   async function bumpCounter() {
@@ -145,7 +145,7 @@
         kind: 'err',
         title: 'That file isn\'t a plugin',
         lines: [
-          'Plugins are ".jar" files — this one is "' + file.name + '".',
+          'Plugins are ".jar" files. This one is "' + file.name + '".',
           'Look in your server\'s plugins folder for the file you want to update.',
         ],
       });
@@ -156,7 +156,7 @@
     $('fileSize').textContent = formatSize(file.size);
     $('drop').hidden = true;
     $('fileChip').hidden = false;
-    status('Ready — preview it, or fill in the steps below.', '');
+    status('Ready. Preview it, or fill in the steps below.', '');
   }
 
   function clearFile() {
@@ -204,7 +204,7 @@
       return;
     }
     try {
-      status('Reading jar…', '');
+      status('Reading jar...', '');
       const info = await window.PPInjector.inspectJar(await fileBytes());
       const authors = info.authors && info.authors.length ? info.authors.join(', ') : 'not listed in the jar';
       $('previewOut').textContent =
@@ -213,7 +213,7 @@
         'Author(s)        : ' + authors + '\n' +
         'Can be updated   : Yes' +
         (info.finalMain
-          ? '\nNote             : this plugin needs a small adjustment first — the tool does it for you'
+          ? '\nNote             : this plugin needs a small adjustment first. The tool does it for you'
           : '') +
         (info.alreadyInjected ? '\nAlready has updates: Yes' : '');
 
@@ -224,11 +224,11 @@
           title: 'This jar already has PluginPulse',
           lines: [
             'To change its update settings, open Advanced settings in step 3, tick "This jar already has '
-              + 'PluginPulse — change its settings", then Generate.',
+              + 'PluginPulse: change its settings", then Generate.',
           ],
         });
       } else {
-        status('Looks good — fill in the fields and Generate.', 'ok');
+        status('Looks good. Fill in the fields and Generate.', 'ok');
       }
     } catch (err) {
       status('Preview failed.', 'err');
@@ -238,14 +238,14 @@
           title: 'That doesn\'t look like a Paper/Spigot plugin',
           lines: [
             'No plugin.yml or paper-plugin.yml with a main class was found inside the jar.',
-            'Make sure you picked the plugin jar itself — not a library, a source archive, or a mod for a different platform.',
+            'Make sure you picked the plugin jar itself, not a library, a source archive, or a mod for a different platform.',
           ],
         });
       } else {
         toast({
           kind: 'err',
           title: 'Couldn\'t read that jar',
-          lines: [err.message, 'If it is a valid plugin jar, try re-downloading it — the file may be corrupted.'],
+          lines: [err.message, 'If it is a valid plugin jar, try re-downloading it. The file may be corrupted.'],
         });
       }
     }
@@ -281,7 +281,7 @@
     }
     if (opts.jenkins && !/^https?:\/\//i.test(opts.jenkins)) {
       toast({ kind: 'err', title: 'Jenkins URL looks wrong',
-        lines: ['Use the full job page URL, starting with https:// — e.g. https://ci.athion.net/job/FastAsyncWorldEdit/'] });
+        lines: ['Use the full job page URL, starting with https://, for example https://ci.athion.net/job/FastAsyncWorldEdit/'] });
       return;
     }
     if (opts.githubToken && !opts.github) {
@@ -297,19 +297,19 @@
       toast({ kind: 'warn', timeout: 20000, title: 'Your pass key goes inside this jar',
         lines: [
           'Anyone you give the jar to can read the key out of it and use it on your private project.',
-          'Keep this jar on your own server — or cancel, type ${GITHUB_TOKEN} in that box instead, and '
+          'Keep this jar on your own server. Or cancel, type ${GITHUB_TOKEN} in that box instead, and '
             + 'put the real key in a setting of that name on the server.',
         ] });
     }
     try {
-      status('Generating…', '');
+      status('Generating...', '');
       const a = await loadAssets();
       const out = await window.PPInjector.injectJar(await fileBytes(), opts, a);
       const base = selectedFile.name.replace(/\.jar$/i, '');
       download(out, base + '-pulse.jar');
-      status('Done — you created ' + base + '-pulse.jar.', 'ok');
+      status('Done. You created ' + base + '-pulse.jar.', 'ok');
       toast({ kind: 'ok', title: 'Updated jar downloaded',
-        lines: [base + '-pulse.jar is in your downloads.', 'Test it on your own server before sharing it — the tool can\'t confirm the jar boots.'] });
+        lines: [base + '-pulse.jar is in your downloads.', 'Test it on your own server before sharing it. The tool can\'t confirm the jar boots.'] });
       bumpCounter();
     } catch (err) {
       status('Could not process this jar.', 'err');

@@ -3,20 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PluginPulse — add auto-updates to a plugin jar</title>
-  <meta name="description" content="Add an auto-updater to a compiled Paper/Spigot plugin jar. Runs entirely in your browser — your jar is never uploaded. No source code, no build tools, no account.">
+  <title>PluginPulse: add auto-updates to a plugin jar</title>
+  <meta name="description" content="Add an auto-updater to a compiled Paper/Spigot plugin jar. Runs entirely in your browser. Your jar is never uploaded. No source code, no build tools, no account.">
   <link rel="canonical" href="https://esmp-fun.github.io/PluginPulse/">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <meta name="theme-color" content="#0f1216">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PluginPulse">
   <meta property="og:title" content="Add auto-updates to a plugin jar you already have">
-  <meta property="og:description" content="No source code. No build tools. No account. Runs in your browser — your jar is never uploaded.">
+  <meta property="og:description" content="No source code. No build tools. No account. Runs in your browser. Your jar is never uploaded.">
   <meta property="og:url" content="https://esmp-fun.github.io/PluginPulse/">
   <meta property="og:image" content="https://esmp-fun.github.io/PluginPulse/assets/og.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="PluginPulse — add auto-updates to a plugin jar you already have.">
+  <meta property="og:image:alt" content="PluginPulse: add auto-updates to a plugin jar you already have.">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -38,7 +38,7 @@
 <main>
   <div class="hero">
     <h1>Add auto-updates to a plugin jar you already have</h1>
-    <p class="lede">For a compiled Paper or Spigot plugin — no source code, no build tools,
+    <p class="lede">For a compiled Paper or Spigot plugin, no source code, no build tools,
       no account. <span id="pulseCounter" class="counter" hidden></span></p>
     <ul class="trust">
       <li><span><strong>Runs in your browser</strong></span></li>
@@ -50,8 +50,8 @@
   <section class="paths">
     <p>Not what you need?</p>
     <ul>
-      <li><a href="adopting-the-library/">I build my own plugin</a> — add the updater to your code instead.</li>
-      <li><a href="companion-plugin/">I run a server and just want my plugins updated</a> — use the companion plugin.</li>
+      <li><a href="adopting-the-library/">I build my own plugin</a>: add the updater to your code instead.</li>
+      <li><a href="companion-plugin/">I run a server and just want my plugins updated</a>: use the companion plugin.</li>
       <li>You're in the right place if you have a jar you can't or won't rebuild.</li>
     </ul>
   </section>
@@ -83,7 +83,7 @@
 
       <ul class="assure">
         <li><span><strong>Your original jar is never changed.</strong> You get a brand-new copy back, saved
-          to your downloads — the file you picked stays exactly as it was.</span></li>
+          to your downloads. The file you picked stays exactly as it was.</span></li>
         <li><span><strong>Nothing is uploaded.</strong> The whole process happens inside this page, so it
           works with the internet switched off once the page has loaded.</span></li>
         <li><span><strong>You can look before you leap.</strong> Preview shows you what's inside the jar
@@ -96,7 +96,7 @@
 
     <li>
       <h2>Where do updates come from?</h2>
-      <p class="step-sub">Fill in at least one — this is the page the plugin will check for new versions.
+      <p class="step-sub">Fill in at least one. This is the page the plugin will check for new versions.
         If more than one is filled in, #1 is tried first and the others are backups.
         <a href="update-sources/">How do I find these?</a></p>
 
@@ -126,12 +126,12 @@
         </div>
         <div class="source-input">
           <input id="githubToken" type="text"
-            placeholder="only for a private repository — see the note below">
+            placeholder="only for a private repository, see the note below">
         </div>
         <p class="hint">Leave the second box empty for a normal, public project. If the code is kept
           private, GitHub won't let the plugin look at it without a pass key, and that box is where the
           key goes. <strong>Safest way:</strong> type <code>${GITHUB_TOKEN}</code> and put the real key in
-          a setting called <code>GITHUB_TOKEN</code> on the server that runs the plugin — then the key
+          a setting called <code>GITHUB_TOKEN</code> on the server that runs the plugin. Then the key
           itself never goes into the file you hand out. Typing the key here instead puts a copy of it
           inside the jar, so only do that for a jar that stays on your own server.</p>
       </div>
@@ -167,7 +167,7 @@
         <p class="hint">For plugins that publish test builds from their own build server. These are
           work-in-progress builds rather than finished releases, so expect rough edges. Builds like these
           come without the security check the tool normally does, so the tool turns that check off for
-          this plugin — otherwise it would refuse every download.</p>
+          this plugin, otherwise it would refuse every download.</p>
       </div>
     </li>
 
@@ -176,26 +176,26 @@
       <p class="step-sub">What the plugin does when it finds a newer version.</p>
       <label>Update mode
         <select id="mode">
-          <option value="notify" selected>notify — tell admins on join (nothing is downloaded)</option>
-          <option value="check-only">check-only — stay quiet; only answer when asked</option>
-          <option value="download">download — download it, ready for the next restart</option>
-          <option value="auto-stage">auto-stage — download it as soon as it appears</option>
+          <option value="notify" selected>notify: tell admins on join (nothing is downloaded)</option>
+          <option value="check-only">check-only: stay quiet; only answer when asked</option>
+          <option value="download">download: download it, ready for the next restart</option>
+          <option value="auto-stage">auto-stage: download it as soon as it appears</option>
         </select>
       </label>
       <label>Your contact details <span class="opt">(recommended)</span>
-        <input id="contact" type="text" placeholder="email or website — Modrinth asks for a way to reach you">
+        <input id="contact" type="text" placeholder="email or website (Modrinth asks for a way to reach you)">
       </label>
 
       <details class="advanced">
         <summary>Advanced settings</summary>
         <label>Command <span class="opt">(optional)</span>
-          <input id="commandRoot" type="text" placeholder="e.g. /myplugin — lets admins check for updates in game">
+          <input id="commandRoot" type="text" placeholder="e.g. /myplugin (lets admins check for updates in game)">
         </label>
         <label>Permission <span class="opt">(optional)</span>
-          <input id="permission" type="text" placeholder="e.g. myplugin.admin — who is told about updates">
+          <input id="permission" type="text" placeholder="e.g. myplugin.admin (who is told about updates)">
         </label>
         <label>Release line <span class="opt">(optional)</span>
-          <input id="track" type="text" placeholder="e.g. mc26 — only if the plugin ships two parallel versions">
+          <input id="track" type="text" placeholder="e.g. mc26 (only if the plugin ships two parallel versions)">
         </label>
         <label>Check for updates every <span class="opt">(hours)</span>
           <input id="interval" type="number" min="1" placeholder="6">
@@ -207,20 +207,20 @@
           fix a few hours later. Tick this and the plugin ignores a release until it has been available for
           the number of hours below, so those quick fix-ups land first. It goes by the date shown on the
           plugin's own page, and an admin can still install a release straight away with the update command.</p>
-        <label>Wait this long first <span class="opt">(hours — only used when the box above is ticked)</span>
+        <label>Wait this long first <span class="opt">(hours, only used when the box above is ticked)</span>
           <input id="holdHours" type="number" min="1" placeholder="18">
         </label>
 
         <label class="check"><input id="hotReload" type="checkbox">
           Install updates without restarting the server</label>
         <p class="hint">Normally an update waits for your next restart. With this on, the plugin swaps
-          itself over while the server keeps running — players stay connected. It checks first, and if
+          itself over while the server keeps running. Players stay connected. It checks first, and if
           swapping would be risky (on a Folia server, when other plugins are built on top of this one, or
           when the plugin loads a helper file the server can only load once), it leaves the update waiting
           for your next restart instead. Safe to leave off if you're unsure.</p>
 
         <label class="check"><input id="upgrade" type="checkbox">
-          This jar already has PluginPulse — change its settings</label>
+          This jar already has PluginPulse: change its settings</label>
       </details>
     </li>
 
@@ -240,7 +240,7 @@
     <h2>Good to know</h2>
     <ul>
       <li>Works with plugins built for any Minecraft version this tool has seen, old and new alike.</li>
-      <li>The tool can't run the plugin, so it can't confirm it still works — always test the new jar
+      <li>The tool can't run the plugin, so it can't confirm it still works. Always test the new jar
         yourself first.</li>
       <li>Some plugins are built in a way that this in-page tool can't rearrange. If that happens you'll
         get a plain-English message saying so, and the command-line version can usually still do it.</li>

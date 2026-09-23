@@ -17,7 +17,7 @@ import java.util.Map;
  *   "changelog": "Fixed ...",
  *   "download": "https://example.com/dl/plugin-1.0.4.jar",
  *   "filename": "plugin-1.0.4.jar",
- *   "sha256": "…", "sha512": "…",       // any subset
+ *   "sha256": "...", "sha512": "...",       // any subset
  *   "size": 123456,
  *   "restart-required": true,
  *   "published": "2026-07-20T10:15:30Z",  // when it went live; ISO-8601 or epoch ms

@@ -24,7 +24,7 @@ public interface UpdateSource {
 
     /**
      * Extra HTTP headers the download step must reuse to fetch this source's
-     * artifact — e.g. an {@code Authorization} header for a private GitHub repo
+     * artifact: e.g. an {@code Authorization} header for a private GitHub repo
      * or a self-hosted store's licence key. Empty for anonymous public sources.
      *
      * <p>The updater carries these from the check that produced the

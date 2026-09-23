@@ -7,7 +7,7 @@ import org.bukkit.command.CommandSender;
 /**
  * All Adventure/MiniMessage usage is quarantined here. This class is only
  * referenced (and therefore only class-loaded) when {@link UpdateNotifier}
- * has confirmed Adventure is present on the server — so it never triggers a
+ * has confirmed Adventure is present on the server, so it never triggers a
  * {@code NoClassDefFoundError} on Spigot, which does not bundle Adventure.
  */
 final class AdventureText {

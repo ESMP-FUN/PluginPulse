@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Finding your update source — PluginPulse docs</title>
+  <title>Finding your update source | PluginPulse docs</title>
   <meta name="description" content="How to find the Modrinth slug, GitHub repository, Hangar project or Jenkins job that a plugin releases from.">
   <link rel="canonical" href="https://esmp-fun.github.io/PluginPulse/update-sources/">
   <link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
@@ -51,7 +51,7 @@
       version of a plugin is out. You need at least one. This page explains how to find the right
       identifier for each. It's shared by all three guides.</p>
 
-    <p>You can list more than one — one is the <strong>primary</strong> and the rest are
+    <p>You can list more than one: one is the <strong>primary</strong> and the rest are
       <strong>fallbacks</strong> tried in order if the primary is unreachable. By default the order
       is Modrinth, then GitHub, then Hangar, then Jenkins. To choose your own order, add a
       <code>source-order</code> list (primary first); any source you leave out is appended after
@@ -59,15 +59,15 @@
     <pre><code>modrinth: my-plugin
 github: me/my-plugin
 source-order: [github, modrinth]   # check GitHub first, Modrinth as fallback</code></pre>
-    <p>In the web tool, use the <strong>priority</strong> dropdown next to each source instead —
-      it writes <code>source-order</code> for you.</p>
+    <p>In the web tool, use the <strong>priority</strong> dropdown next to each source instead.
+      It writes <code>source-order</code> for you.</p>
 
     <h2>Modrinth</h2>
     <p>For plugins published on <a href="https://modrinth.com">modrinth.com</a>.</p>
     <ul>
       <li>Open the plugin's page. The URL looks like
         <code>https://modrinth.com/plugin/</code><strong><code>my-plugin</code></strong>.</li>
-      <li>The bold part is the <strong>slug</strong> — that's your Modrinth value.</li>
+      <li>The bold part is the <strong>slug</strong>: that's your Modrinth value.</li>
     </ul>
     <pre><code>modrinth: my-plugin</code></pre>
     <blockquote><p>Modrinth's API asks every caller to identify itself. Provide a contact (an
@@ -84,7 +84,7 @@ source-order: [github, modrinth]   # check GitHub first, Modrinth as fallback</c
     <pre><code>github: owner/repo</code></pre>
     <blockquote><p>GitHub allows only ~60 checks per hour from one server's IP when
       unauthenticated. PluginPulse spaces checks out and remembers the last result, so the default
-      interval is fine — just don't set an aggressively short one.</p></blockquote>
+      interval is fine, just don't set an aggressively short one.</p></blockquote>
 
     <h2>Hangar</h2>
     <p>For plugins on <a href="https://hangar.papermc.io">hangar.papermc.io</a>.</p>
@@ -96,26 +96,26 @@ source-order: [github, modrinth]   # check GitHub first, Modrinth as fallback</c
     <pre><code>hangar: My-Plugin</code></pre>
 
     <h2>Jenkins (CI snapshots)</h2>
-    <p>For plugins whose builds come from a <strong>Jenkins</strong> server — for example
+    <p>For plugins whose builds come from a <strong>Jenkins</strong> server, for example
       FastAsyncWorldEdit
       (<a href="https://ci.athion.net/job/FastAsyncWorldEdit/">ci.athion.net/job/FastAsyncWorldEdit</a>),
       LuckPerms snapshots (ci.lucko.me), EssentialsX dev builds, and many others. PluginPulse
       follows the job's <strong>last successful build</strong>.</p>
     <ul>
-      <li>Use the <strong>job page URL</strong> — the page listing the build history, ending in
+      <li>Use the <strong>job page URL</strong>: the page listing the build history, ending in
         <code>/job/&lt;Name&gt;/</code>.</li>
       <li>Many jobs archive <strong>several jars</strong> per build (FAWE ships Bukkit, CLI and
-        Paper jars). Add <code>jenkins-artifact</code> — a pattern matched against the file name —
+        Paper jars). Add <code>jenkins-artifact</code>, a pattern matched against the file name,
         to pick the right one.</li>
     </ul>
     <pre><code>jenkins: https://ci.athion.net/job/FastAsyncWorldEdit/
 jenkins-artifact: "Paper"     # optional; regex, case-insensitive
-require-hash: false           # needed for download/auto modes — see below</code></pre>
+require-hash: false           # needed for download/auto modes, see below</code></pre>
     <blockquote><p><strong>Two things to know about CI builds.</strong> (1) Jenkins publishes no
       checksums, so with the default <code>require-hash: true</code> PluginPulse will notify you
       but refuse to auto-download; set <code>require-hash: false</code> for this plugin if you
       accept unverified CI artifacts. (2) These are <strong>development snapshots</strong>, not
-      releases — every successful build is offered, so expect frequent updates and the occasional
+      releases. Every successful build is offered, so expect frequent updates and the occasional
       broken build. Prefer Modrinth/Hangar/GitHub when the plugin publishes proper releases
       there.</p></blockquote>
 
@@ -134,14 +134,14 @@ require-hash: false           # needed for download/auto modes — see below</co
         <tr><td>EssentialsX</td><td><code>https://ci.ender.zone/job/EssentialsX/</code></td>
             <td><code>^EssentialsX-</code> for the core; each module jar is also archived</td></tr>
         <tr><td>ViaVersion</td><td><code>https://ci.viaversion.com/job/ViaVersion/</code></td>
-            <td><em>(none needed — single jar)</em></td></tr>
+            <td><em>(none needed: single jar)</em></td></tr>
         <tr><td>PlaceholderAPI</td><td><code>https://ci.extendedclip.com/job/PlaceholderAPI/</code></td>
-            <td><code>PlaceholderAPI-[\d.]+\.jar$</code> — <strong>required</strong>; without it the
+            <td><code>PlaceholderAPI-[\d.]+\.jar$</code>: <strong>required</strong>; without it the
               <code>-plain</code> classifier jar is picked first</td></tr>
         <tr><td>BungeeCord</td><td><code>https://ci.md-5.net/job/BungeeCord/</code></td>
-            <td><code>^BungeeCord</code> — module command jars are archived alongside it</td></tr>
+            <td><code>^BungeeCord</code>: module command jars are archived alongside it</td></tr>
         <tr><td>HolographicDisplays</td><td><code>https://ci.codemc.io/job/filoghost/job/HolographicDisplays/</code></td>
-            <td><em>(none needed)</em> — nested CodeMC folder jobs work with the plain job-page URL</td></tr>
+            <td><em>(none needed)</em>: nested CodeMC folder jobs work with the plain job-page URL</td></tr>
       </tbody>
     </table>
     <p>The PlaceholderAPI row shows the general rule: when a job archives classifier jars
@@ -150,11 +150,11 @@ require-hash: false           # needed for download/auto modes — see below</co
       <code>-sources</code>/<code>-javadoc</code>" pick.</p>
     <p>Some Jenkins servers can't be used: <strong>ci.citizensnpcs.co</strong> (Citizens, Denizen)
       blocks the JSON API at its web proxy, and <strong>ci.dmulloy2.net</strong> (ProtocolLib) sits
-      behind a Cloudflare challenge — both return HTML instead of JSON, so the check fails.</p>
+      behind a Cloudflare challenge. Both return HTML instead of JSON, so the check fails.</p>
 
     <h2>Self-hosted (advanced)</h2>
     <p>If the plugin author publishes their own JSON manifest (for example, a paid plugin behind a
-      licence key), that's a <strong>custom source</strong> — see the
+      licence key), that's a <strong>custom source</strong>; see the
       <a href="https://github.com/ESMP-FUN/PluginPulse#sources">developer reference</a>
       <code>CustomJsonSource</code>. The companion plugin and web tool don't configure custom
       sources; use the library directly.</p>

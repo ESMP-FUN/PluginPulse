@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Web tool — PluginPulse docs</title>
+  <title>Web tool | PluginPulse docs</title>
   <meta name="description" content="How to use the PluginPulse browser tool: add an auto-updater to a compiled Paper/Spigot plugin jar without rebuilding it. Runs entirely in your browser.">
   <link rel="canonical" href="https://esmp-fun.github.io/PluginPulse/web-tool/">
   <link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
@@ -46,7 +46,7 @@
   </aside>
 
   <main class="content">
-    <h1>Path 3 — The browser tool (for jar-only users)</h1>
+    <h1>Path 3: The browser tool (for jar-only users)</h1>
     <p class="lede"><strong>Audience:</strong> you have a compiled plugin <code>.jar</code> but
       can't or won't rebuild it from source, and you want to add auto-updates to it.</p>
 
@@ -54,14 +54,14 @@
 
     <h2>What it does</h2>
     <p>The tool adds PluginPulse to an existing plugin jar and hands you a new jar. It runs
-      <strong>entirely in your web browser</strong> — <strong>your jar is never uploaded to any
+      <strong>entirely in your web browser</strong>: <strong>your jar is never uploaded to any
       server.</strong> There's nothing to install and no account.</p>
     <p><strong>Open it:</strong> <a href="../">esmp-fun.github.io/PluginPulse</a></p>
 
     <h2>Step by step</h2>
     <ol>
       <li><p><strong>Open</strong> the tool (link above).</p></li>
-      <li><p><strong>Choose your plugin jar</strong> — drag it onto the drop zone or click to browse —
+      <li><p><strong>Choose your plugin jar</strong>: drag it onto the drop zone or click to browse,
         and, optionally, click <strong>Preview jar</strong>. Preview reads the jar on your own computer
         and shows the plugin's name, version, author and whether the tool can update it, without
         changing anything.</p></li>
@@ -80,7 +80,7 @@
                 in full is written into the jar, so only do that for a jar that stays on your own
                 server</td><td>your repository's settings</td></tr>
             <tr><td>Update mode</td><td>how it should behave (see below)</td><td>your choice</td></tr>
-            <tr><td>Command root</td><td><em>(optional)</em> e.g. <code>/myplugin</code> — a command to
+            <tr><td>Command root</td><td><em>(optional)</em> e.g. <code>/myplugin</code>, a command to
                 manage updates</td><td>your choice</td></tr>
             <tr><td>Permission</td><td><em>(optional)</em> who sees notices, e.g.
                 <code>myplugin.admin</code></td><td>your choice</td></tr>
@@ -101,25 +101,25 @@
         </table>
         <p><strong><code>mode</code> for beginners:</strong></p>
         <ul>
-          <li><code>notify</code> — tells admins when an update exists; the notice has a
+          <li><code>notify</code>: tells admins when an update exists; the notice has a
             <strong>[Download &amp; Install]</strong> button so they can pull it in the background
             without visiting a page.</li>
-          <li><code>check-only</code> — silent; the result shows only via the command.</li>
-          <li><code>download</code> — downloads and stages the update; it applies when you restart.</li>
-          <li><code>auto-stage</code> — downloads automatically as soon as an update appears (and,
+          <li><code>check-only</code>: silent; the result shows only via the command.</li>
+          <li><code>download</code>: downloads and stages the update; it applies when you restart.</li>
+          <li><code>auto-stage</code>: downloads automatically as soon as an update appears (and,
             with hot-reload on a safe server, applies it with no restart).</li>
         </ul>
         <p><strong>Jenkins note:</strong> CI builds are dev snapshots and Jenkins publishes no
           checksums. If you pick <code>download</code> or <code>auto-stage</code> with a Jenkins
           source, the tool writes <code>require-hash: false</code> into the generated config so
-          staging accepts the unverified artifact — otherwise CI updates would be notify-only.</p>
+          staging accepts the unverified artifact, otherwise CI updates would be notify-only.</p>
       </li>
-      <li><p><strong>Tick the rights checkbox</strong> — confirm you're allowed to modify and
+      <li><p><strong>Tick the rights checkbox</strong>: confirm you're allowed to modify and
         redistribute this jar. (You're altering someone's compiled software; only do this for jars
         you have the right to change.)</p></li>
-      <li><p><strong>Generate</strong> — the tool builds <code>&lt;yourplugin&gt;-pulse.jar</code>
+      <li><p><strong>Generate</strong>: the tool builds <code>&lt;yourplugin&gt;-pulse.jar</code>
         and your browser downloads it.</p></li>
-      <li><p><strong>Test it on your own server first</strong> — drop the new jar in
+      <li><p><strong>Test it on your own server first</strong>: drop the new jar in
         <code>plugins/</code>, start the server, and confirm the plugin still enables and logs an
         update check. The tool can't verify the jar boots; that's on you before you share it.</p></li>
     </ol>
@@ -127,7 +127,7 @@
     <h2>Limits (read these)</h2>
     <ul>
       <li><strong>Wrapper strategy.</strong> If the plugin's main class is <code>final</code> (the
-        default for Kotlin plugins), the tool clears that flag so the wrapper can subclass it —
+        default for Kotlin plugins), the tool clears that flag so the wrapper can subclass it,
         removing <code>final</code> only permits subclassing and is safe for a plugin main class.
         If you'd rather edit a final main in place, the command-line tool
         <code>pluginpulse-inject</code> uses the instrument strategy instead.</li>
@@ -139,11 +139,11 @@
     <h2>"It said my jar can't be processed"</h2>
     <p>Common reasons and what to do:</p>
     <ul>
-      <li><strong>"main class is final"</strong> — expected for some plugins; use the CLI tool
+      <li><strong>"main class is final"</strong>: expected for some plugins; use the CLI tool
         (<code>pluginpulse-inject</code>), which handles this case.</li>
-      <li><strong>"already contains PluginPulse"</strong> — it was injected before. Tick the
+      <li><strong>"already contains PluginPulse"</strong>: it was injected before. Tick the
         <strong>re-inject</strong> box only if you mean to redo it.</li>
-      <li><strong>"No plugin.yml or paper-plugin.yml with a main:"</strong> — the file isn't a
+      <li><strong>"No plugin.yml or paper-plugin.yml with a main:"</strong>. The file isn't a
         Bukkit plugin jar (or its descriptor is missing/renamed). Double-check you selected the
         right file.</li>
     </ul>

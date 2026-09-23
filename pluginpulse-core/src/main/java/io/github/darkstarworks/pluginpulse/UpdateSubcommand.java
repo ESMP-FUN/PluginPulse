@@ -52,20 +52,9 @@ public final class UpdateSubcommand {
             }
             case "restore" -> updater.restoreBackup(sender);
             case "apply", "reload" -> updater.applyNow(sender);
-            case "status" -> {
-                UpdateInfo pending = updater.pendingUpdate();
-                String held = updater.holdNotice();
-                if (pending != null) {
-                    sender.sendMessage("Update available: " + pending.version()
-                            + " (current: " + updater.currentVersion() + ")");
-                } else if (held != null) {
-                    sender.sendMessage("Waiting: " + held);
-                } else {
-                    sender.sendMessage("Up to date (" + updater.currentVersion() + ") as of the last check.");
-                }
-            }
+            case "status" -> sender.sendMessage("Status: " + updater.statusLine());
             default -> sender.sendMessage(
-                    "Unknown update action. Try: check, download, ignore <v>, unignore <v>, restore, status");
+                    "Unknown update action. Try: check, download, apply, ignore <version>, unignore <version>, restore, status");
         }
         return true;
     }

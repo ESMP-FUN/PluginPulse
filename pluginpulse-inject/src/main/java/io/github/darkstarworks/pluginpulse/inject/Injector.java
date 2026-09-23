@@ -31,7 +31,7 @@ public final class Injector {
     private static final Pattern MAIN_LINE = Pattern.compile("(?m)^(\\s*main:\\s*).*$");
     private static final String CORE_PACKAGE = "io.github.darkstarworks.pluginpulse";
 
-    /** What an injection did — surfaced by the CLI. */
+    /** What an injection did: surfaced by the CLI. */
     public record Result(Strategy strategy, String main, String wrapperOrMain,
                          String relocatedPackage, boolean strippedSignature) {
     }
@@ -128,7 +128,7 @@ public final class Injector {
             addCoreClasses(relocatedCore, out, written);
             put(out, mainEntry, instrumented, written);
             put(out, "pluginpulse.yml", PulseYaml.build(o).getBytes(StandardCharsets.UTF_8), written);
-            // main: is unchanged for INSTRUMENT — descriptor copied verbatim above.
+            // main: is unchanged for INSTRUMENT: descriptor copied verbatim above.
         }
         return new Result(Strategy.INSTRUMENT, d.main(), d.main(), relocatedPackage, insp.signed());
     }
@@ -214,7 +214,7 @@ public final class Injector {
     }
 
     private static boolean isSignatureFile(String name) {
-        String u = name.toUpperCase();
+        String u = name.toUpperCase(java.util.Locale.ROOT);
         return u.startsWith("META-INF/") && (u.endsWith(".SF") || u.endsWith(".RSA")
                 || u.endsWith(".EC") || u.endsWith(".DSA"));
     }
