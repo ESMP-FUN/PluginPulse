@@ -1,4 +1,4 @@
-[CENTER][IMG]https://raw.githubusercontent.com/ESMP-FUN/PluginPulse/master/docs/assets/og.png[/IMG]
+[CENTER][IMG]https://raw.githubusercontent.com/ESMP-FUN/PluginPulse/master/docs/assets/pluginpulse-banner-1000x250.png[/IMG]
 
 [SIZE=5][B]Your plugins stay up to date, and you decide how far it goes.[/B][/SIZE]
 
