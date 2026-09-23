@@ -1,207 +1,193 @@
-<div align="center">
+<center>
 
 # PluginPulse
+**Your plugins stay up to date, and you decide how far it goes.**
 
-### Keep your plugins up to date, the way that suits you
-Drop-in companion plugin, shade-in library, in-browser tool. Paper, Spigot, Folia.
+Most servers find out a plugin is outdated the hard way, <br>
+from a crash, a security warning, or a player telling them.
 
-<br>
+[![Discord](https://img.shields.io/badge/join_-_Discord-gray?style=flat&logo=discord&logoSize=amd)](https://discord.gg/qwYcTpHsNC)
+[![Ko-Fi](https://img.shields.io/badge/support_-_KoFi-gray?style=flat&logo=kofi&logoSize=amd)](https://ko-fi.com/darkstarworks)
 
-**Got a "if it did [THING], I'd use it" idea? Tell me!** [<img src="https://raw.githubusercontent.com/darkstarworks/TrialChamberPro/master/dc.png" width="20" alt="Join Discord Server">](https://discord.gg/qwYcTpHsNC)
+PluginPulse checks where your plugins publish their updates, <br>
+tells you when one is out, and can install it for you.
 
-Donating is Free! (for me): [ [Ko-Fi](https://ko-fi.com/darkstarworks) ]
-
-</div>
-
-<br>
-
-Most servers find out a plugin is outdated the hard way: a crash, a security
-advisory, or a player pointing it out. PluginPulse checks the places your plugins
-actually publish releases (Modrinth, GitHub, Hangar, or a self-hosted manifest),
-tells you when something's behind, and (if you let it) downloads the update,
-verifies its checksum, backs up the old jar, and stages the new one to apply on
-your next restart.
-
-It's **three tools in one project**, so you pick the one that matches you:
-
-| You... | Use | 
+| **Without PluginPulse** | **With PluginPulse** |
 |---|---|
-| **run a server** and want your installed plugins kept current | the **companion plugin** (the download here) |
-| **build your own plugin** and want it to self-update | the **library**, shade it in |
-| **have a jar** you can't or won't rebuild | the **browser tool**, add updates to it in your browser |
+| Visit every plugin page to see what's new | One list shows what's behind |
+| Download, rename and copy jars by hand | One command, or fully automatic |
+| A bad download breaks your server | Every download is checked before it's used |
+| A broken update means hunting for the old jar | `/pluginpulse restore` puts it back |
+| The wrong jar for your Minecraft version | The one made for your server, picked for you |
+
+</center>
 
 ---
 
-## Compatibility
+<details>
+<summary><b>Setup</b></summary>
+
+1. Drop the jar into `plugins/` and start the server
+2. List the plugins you want kept up to date in `plugins/PluginPulseCompanion/config.yml`
+3. Run `/pluginpulse reload`
+
+```yaml
+plugins:
+  EssentialsX:              # the name /plugins shows
+    modrinth: essentialsx   # where its updates come from
+    mode: notify            # tell me, download nothing
+```
+
+The plugins you list don't need to know PluginPulse exists.
+</details>
+
+---
+
+## What it does
+
+**Finds updates**
+- Checks Modrinth, GitHub, Hangar, a Jenkins build server, or a web address you host
+- Give a plugin more than one place to check, in the order you choose
+- When a plugin makes separate downloads for 1.21 and 26.x, you get the one for your server
+
+**Tells you**
+- A notice in the console and in game for anyone with `pluginpulse.admin`
+- Click the notice to open the download page, or run `/pluginpulse download` to install it
+
+**Installs, only if you let it**
+- Each plugin gets its own mode, from "just tell me" to fully automatic
+- Every download is checked against the checksum the author published. A damaged or tampered file is never used
+- The old jar is backed up first, and the update is applied on your next restart
+
+**Waits out brand-new releases, if you like**
+- Sometimes an update is broken and fixed a few hours later
+- Switch on `hold-new-updates` and PluginPulse waits until a release has been out for 18 hours
+- `/pluginpulse download <plugin>` still installs one right away
+
+---
+
+## Will it work on my server?
 
 | | |
 |---|---|
-| **Server software** | Paper, Spigot, Folia, and Paper-compatible forks (Purpur, Pufferfish, etc.) |
-| **Minecraft versions** | 1.20.5 – 1.21.x (plain jar), 26.x (`-mc26` jar) |
-| **Java** | 21+ for 1.20.5–1.21.x, 25+ for 26.x |
-| **Dependencies** | None. Nothing to install alongside it. |
+| **Server software** | Paper, Folia, Spigot, or a Paper fork like Purpur |
+| **Minecraft** | 1.20.5 to 1.21.x with the plain download, 26.x (including 26.3) with the `-mc26` download |
+| **Java** | 21+ for 1.21.x, 25+ for 26.x |
+| **Anything else** | Nothing. No dependencies |
 
-On Spigot (no Adventure), rich clickable notices automatically fall back to plain
-text with the download link spelled out. Everything else works identically.
-Folia is detected at runtime and scheduler calls are routed to the regional
-schedulers automatically.
+On Spigot, notices are plain text with the link written out, instead of clickable.
 
 ---
 
-## The companion plugin (the download)
+## Reference
 
-**PluginPulse Companion** is a normal plugin you drop into `plugins/`. It reads a
-list of your *other* plugins and where each one publishes updates, then checks
-(and optionally downloads) updates on their behalf. Those plugins don't need to
-know anything about it.
-
-```yaml
-# plugins/PluginPulseCompanion/config.yml
-plugins:
-  # Key = the plugin's EXACT name as shown by /plugins
-  EssentialsX:
-    modrinth: essentialsx        # its Modrinth slug
-    mode: notify                 # tell me on join; download nothing
-
-  WorldGuard:
-    github: EngineHub/WorldGuard  # GitHub owner/repo (uses Releases)
-    mode: download                # download + stage; applies on restart
-
-  SomePaidPlugin:
-    hangar: Author/My-Plugin      # Hangar project slug
-    mode: check-only              # silent; only shown in /pluginpulse
-
-user-agent-contact: "you@example.com"   # required by Modrinth's API rules
-check-interval-hours: 6
-hold-new-updates: false      # true = leave a release alone until it has been out
-hold-new-updates-hours: 18   # for this long (see below)
-```
-
-Edit, then `/pluginpulse reload`. That's the whole setup.
-
-### Waiting out brand-new releases
-
-Sometimes an author publishes an update that turns out to be broken and puts out
-a fix a few hours later. Switch on `hold-new-updates` and PluginPulse ignores a
-release until it has been publicly available for `hold-new-updates-hours` (18 by
-default), so those quick fix-ups land before your server takes the update. It
-uses the release date from the plugin's own page, so the clock starts when the
-author released it, not when your server first noticed.
-
-The wait covers the notices, the downloads and the automatic installs. You are
-never locked out: `/pluginpulse download <plugin>` installs it right away, and
-`/pluginpulse` shows what is being waited out and for how much longer. Both keys
-can also be set on a single plugin's entry.
-
-### Update sources
-
-Point each plugin at wherever *it* publishes releases:
-
-- **Modrinth**: project slug (`modrinth: my-plugin`)
-- **GitHub Releases**: `github: owner/repo`
-- **Hangar**: project slug
-- **Custom JSON manifest**: a self-hosted URL (headers can carry auth, e.g. licence keys)
-
-List more than one as fallbacks. You choose the check order: a **priority
-setting** (in the browser tool, a #1/#2/#3 dropdown; in YAML, a `source-order`
-list) decides which is tried first.
-
-### Update modes: you're always in control
-
-| Mode | What happens when an update is found |
-|---|---|
-| `off` | ignore this plugin |
-| `check-only` | check quietly; result only in `/pluginpulse` |
-| `notify` *(default)* | check + tell admins (console & on join). **Nothing downloaded.** |
-| `download` | check, download, checksum-verify, and **stage** for the next restart |
-| `auto-stage` | like `download`, but staged automatically as soon as it's found |
-
-### Safe by design
-
-Nothing is ever swapped under a running server. Downloads are **checksum-verified**
-(sha512, then sha256, then sha1; unsigned downloads are refused unless you opt in), the
-current jar is **backed up**, and the new jar is **staged** into the server's
-update folder to apply on your next restart. `/pluginpulse restore` stages the
-previous backup to roll a bad update back.
-
-### Commands
-
-`/pluginpulse` (aliases `/ppc`, `/pulse`), permission `pluginpulse.admin` (ops by default):
+<details>
+<summary><b>Commands</b></summary>
 
 | Command | What it does |
 |---|---|
-| `/pluginpulse`, `list` | show each managed plugin and whether an update is available |
-| `/pluginpulse check [plugin\|all]` | check now |
-| `/pluginpulse download [plugin\|all]` | download + stage available updates |
-| `/pluginpulse restore [plugin\|all]` | stage the previous backup (undo a bad update) |
-| `/pluginpulse reload` | re-read `config.yml` |
+| `/pluginpulse` | Every managed plugin, and whether it's up to date |
+| `/pluginpulse check [plugin\|all]` | Check now |
+| `/pluginpulse download [plugin\|all]` | Download the update, ready for the next restart |
+| `/pluginpulse apply [plugin\|all]` | Install a downloaded update without a restart (needs `hot-reload: true`) |
+| `/pluginpulse restore [plugin\|all]` | Go back to the previous version on the next restart |
+| `/pluginpulse reload` | Re-read the settings file |
 
----
+Also works as `/ppc` or `/pulse`.
 
-## For plugin developers: the library
+</details>
 
-Want your *own* plugin to self-update? Shade the library in via
-[JitPack](https://jitpack.io) and relocate it:
+<details>
+<summary><b>Permissions</b></summary>
+
+| Permission | What it does | Default |
+|---|---|---|
+| `pluginpulse.admin` | Use the commands and see update notices | OP |
+
+</details>
+
+<details>
+<summary><b>Modes</b></summary>
+
+| Mode | What happens when an update is found |
+|---|---|
+| `off` | Nothing, this plugin is ignored |
+| `check-only` | Nothing, until you run `/pluginpulse` |
+| `notify` (default) | You're told in the console and when you join. Nothing is downloaded |
+| `download` | It's downloaded and checked, ready for your next restart |
+| `auto-stage` | Same as `download`, as soon as the update is found |
+
+</details>
+
+<details>
+<summary><b>Settings people change</b></summary>
+
+```yaml
+plugins:
+  SomePlugin:
+    github: owner/repo           # or modrinth, hangar, jenkins
+    mode: download
+    hot-reload: false            # true = install without a restart, when it's safe
+    match-server-version: true   # take the download made for your Minecraft version
+
+user-agent-contact: "you@example.com"   # Modrinth asks for a way to reach you
+check-interval-hours: 6
+hold-new-updates: false          # true = wait until a release has been out a while
+hold-new-updates-hours: 18
+```
+
+More info? [Read about it in the guide](https://esmp-fun.github.io/PluginPulse/companion-plugin/)
+
+</details>
+
+<details>
+<summary><b>Making your own plugin update itself</b></summary>
+
+PluginPulse is also a library. Add it to your plugin and it updates itself, with the same checks, notices and backups.
 
 ```kotlin
 dependencies {
-    implementation("com.github.darkstarworks.PluginPulse:pluginpulse-core:v0.6.0")
+    implementation("com.github.darkstarworks.PluginPulse:pluginpulse-core:v0.9.0")
 }
 tasks.shadowJar {
     relocate("io.github.darkstarworks.pluginpulse", "my.plugin.libs.pluginpulse")
 }
 ```
 
-Then it's either **one file** (drop a `pluginpulse.yml` in your resources and call
-`PluginPulse.bootstrap(this)` / `shutdown(this)`) or the full **builder** for
-custom sources, message re-branding, tracks, and more. You get MiniMessage
-console + in-game notices, semver-ish version comparison with pre-release
-awareness, distribution **tracks** for parallel builds (e.g. `1.7.3` and
-`1.7.3-mc26`), rate-limit-friendly checks, and verified one-command installs with
-rollback, all dependency-free. See the
-[library guide](https://esmp-fun.github.io/PluginPulse/adopting-the-library/).
+Then either drop a `pluginpulse.yml` into your resources and call `PluginPulse.bootstrap(this)`, or use the builder for full control.
 
-*(Optional `pluginpulse-hotreload` add-on can apply a staged update without a
-restart, with deliberate hard limits: refused on Folia and when other plugins
-depend on yours. Restart-install stays the recommended default.)*
+More info? [Read about it in the library guide](https://esmp-fun.github.io/PluginPulse/adopting-the-library/)
 
----
+</details>
 
-## The browser tool: for a jar you can't rebuild
+<details>
+<summary><b>Adding updates to a jar you can't rebuild</b></summary>
 
-Have a plugin jar but no source and no build tools? The
-[browser tool](https://esmp-fun.github.io/PluginPulse/web-tool/)
-adds an auto-updater to a compiled jar **entirely in your browser**. Pick the
-jar, choose where its updates come from, generate a new jar. Your jar is never
-uploaded anywhere; all the work happens locally on the page.
+Have a plugin jar but no source code? The [browser tool](https://esmp-fun.github.io/PluginPulse/) adds an updater to it. Pick the jar, say where its updates come from, and download the new jar.
+
+Everything happens on the page. Your jar is never uploaded.
+
+More info? [Read about it in the browser tool guide](https://esmp-fun.github.io/PluginPulse/web-tool/)
+
+</details>
 
 ---
 
-## 100% Free & Source Available
+## Help
 
-No licence key, no telemetry, no "premium" gating. Source-available licence, full source on
-[GitHub](https://github.com/ESMP-FUN/PluginPulse): issues and PRs welcome.
+- **[Discord](https://discord.gg/qwYcTpHsNC)** - ask me directly. Tell me "if it did X, I'd use it" and there's a good chance it ships
+- **[Guide](https://esmp-fun.github.io/PluginPulse/companion-plugin/)** - setup, plus [where to find a plugin's updates](https://esmp-fun.github.io/PluginPulse/update-sources/) and a [glossary](https://esmp-fun.github.io/PluginPulse/glossary/)
+- **[Bug reports](https://github.com/ESMP-FUN/PluginPulse/issues)**, **[Source](https://github.com/ESMP-FUN/PluginPulse)**, **[Changelog](https://github.com/ESMP-FUN/PluginPulse/blob/master/CHANGELOG.md)**
 
----
+<center>
 
-## Links
+**Paper, Folia, Spigot** <br>
+**Minecraft 1.20.5 to 26.x**, **Java 21+** <br>
+**No dependencies**
 
-- **Source / issues**: [github.com/ESMP-FUN/PluginPulse](https://github.com/ESMP-FUN/PluginPulse)
-- **Server owners**: [Companion plugin guide](https://esmp-fun.github.io/PluginPulse/companion-plugin/)
-- **Developers**: [Library guide](https://esmp-fun.github.io/PluginPulse/adopting-the-library/)
-- **Jar-only**: [Browser tool guide](https://esmp-fun.github.io/PluginPulse/web-tool/)
-- **Finding your update source**: [Finding your update source](https://esmp-fun.github.io/PluginPulse/update-sources/)
+Free and source available. <br>
+Please consider donating: [Ko-Fi](https://ko-fi.com/darkstarworks) or [Patreon](https://patreon.com/cw/darkstarworks)
 
-<div align="center">
+Did you know I have other plugins? [Check them out here](https://modrinth.com/organization/esmp)
 
----
-
-**Paper, Spigot, Folia**, **MC 1.20.5 – 1.21.x / 26.x**, **Java 21+**
-
-Made by [darkstarworks](https://github.com/darkstarworks)
-
-Did you know I have other plugins? [ [Check them out here](https://modrinth.com/organization/esmp) ]
-
-Donating is free! (for me): [Ko-Fi](https://ko-fi.com/darkstarworks)
-
-</div>
+</center>

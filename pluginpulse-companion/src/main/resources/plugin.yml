@@ -9,7 +9,7 @@ folia-supported: true
 commands:
   pluginpulse:
     description: Manage updates for the plugins listed in config.yml.
-    usage: /pluginpulse [list|check|download|restore|reload] [plugin|all]
+    usage: /pluginpulse [list|check|download|apply|restore|reload] [plugin|all]
     aliases: [ppc, pulse]
     permission: pluginpulse.admin
 permissions:
