@@ -92,7 +92,7 @@ final class SafetyChecks {
             var meta = plugin.getPluginMeta();
             deps.addAll(meta.getPluginDependencies());
             deps.addAll(meta.getPluginSoftDependencies());
-        } catch (NoSuchMethodError e) {
+        } catch (LinkageError e) {
             deps.addAll(plugin.getDescription().getDepend());
             deps.addAll(plugin.getDescription().getSoftDepend());
         }

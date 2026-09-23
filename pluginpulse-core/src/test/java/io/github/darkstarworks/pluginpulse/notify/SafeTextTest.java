@@ -13,6 +13,13 @@ class SafeTextTest {
     }
 
     @Test
+    void plainTextDropsHoverTextWithItsNestedTags() {
+        assertEquals("Update 1.0 downloaded. [Install Now]", UpdateNotifier.stripTags(
+                "<green>Update 1.0 downloaded.</green> <click:run_command:'/x update apply'>"
+                        + "<hover:show_text:'<gray>Install it now, no restart needed'><aqua>[Install Now]</aqua></hover></click>"));
+    }
+
+    @Test
     void urlsLoseQuotesAndTags() {
         assertEquals("https://example.com/ab", UpdateNotifier.safeUrl("https://example.com/a'<b>"));
     }

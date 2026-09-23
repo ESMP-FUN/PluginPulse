@@ -121,7 +121,7 @@ public final class UpdateNotifier {
         if (ADVENTURE_PRESENT) {
             AdventureText.send(sender, render(key, "", info));
         } else {
-            sender.sendMessage(stripTags(render(key, "", info)));
+            sender.sendMessage(plainStaged(key, info, offerReload));
         }
     }
 
@@ -132,7 +132,7 @@ public final class UpdateNotifier {
         if (ADVENTURE_PRESENT) {
             AdventureText.console(render(key, "", info));
         } else {
-            Bukkit.getConsoleSender().sendMessage(stripTags(render(key, "", info)));
+            Bukkit.getConsoleSender().sendMessage(plainStaged(key, info, offerReload));
         }
     }
 
@@ -169,6 +169,16 @@ public final class UpdateNotifier {
 
     /** Drop MiniMessage tags for the plain-text (Spigot) fallback. */
     static String stripTags(String s) {
-        return s.replace("<newline>", " ").replaceAll("<[^>]*>", "").trim();
+        // Hover text is quoted and carries its own tags, so drop it whole first.
+        return s.replace("<newline>", " ")
+                .replaceAll("<hover:show_text:'[^']*'>", "")
+                .replaceAll("<[^>]*>", "")
+                .trim();
+    }
+
+    /** Plain-text staged notice: the [Install Now] button can't be clicked, so name the command. */
+    private String plainStaged(String key, UpdateInfo info, boolean offerReload) {
+        String text = stripTags(render(key, "", info)).replace(" [Install Now]", "");
+        return offerReload ? text + " Run '" + commandRoot + " update apply' to install it now." : text;
     }
 }

@@ -18,7 +18,7 @@ public final class ServerVersion {
         try {
             String v = fromBukkitVersion(Bukkit.getMinecraftVersion());
             if (v != null) return v;
-        } catch (NoSuchMethodError | RuntimeException ignored) {
+        } catch (LinkageError | RuntimeException ignored) {
             // Spigot has no getMinecraftVersion()
         }
         try {

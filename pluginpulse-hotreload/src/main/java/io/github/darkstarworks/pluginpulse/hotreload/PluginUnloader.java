@@ -2,6 +2,7 @@ package io.github.darkstarworks.pluginpulse.hotreload;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
+import org.bukkit.command.CommandMap;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.event.HandlerList;
@@ -30,6 +31,14 @@ final class PluginUnloader {
     static void unload(Plugin plugin, Logger logger) throws Exception {
         String name = plugin.getName();
 
+        // Look everything up before disabling: a failure after that point would
+        // leave the plugin switched off with no commands until a restart.
+        CommandMap commandMap = commandMap();
+        Map<String, Command> known = mutableKnownCommands(commandMap);
+        if (PluginManagerAccess.findBookkeepingHolders(Bukkit.getPluginManager()).isEmpty()) {
+            throw new IllegalStateException("Unrecognized plugin manager internals: cannot hot reload on this server version.");
+        }
+
         Bukkit.getPluginManager().disablePlugin(plugin);
         // disablePlugin already cancels tasks/unregisters listeners & services,
         // but plugins that misbehave in onDisable can leave stragglers, sweep again.
@@ -39,7 +48,7 @@ final class PluginUnloader {
         Bukkit.getMessenger().unregisterIncomingPluginChannel(plugin);
         Bukkit.getMessenger().unregisterOutgoingPluginChannel(plugin);
 
-        removeCommands(plugin);
+        removeCommands(plugin, commandMap, known);
         PluginManagerAccess.removeFromManager(Bukkit.getPluginManager(), plugin);
 
         // Closing the PluginClassLoader releases the jar's file handle.
@@ -63,8 +72,7 @@ final class PluginUnloader {
      * view, so the backing {@code knownCommands} field is mutated via
      * reflection, then the Brigadier dispatcher is re-synced.
      */
-    private static void removeCommands(Plugin plugin) throws ReflectiveOperationException {
-        Map<String, Command> known = mutableKnownCommands();
+    private static void removeCommands(Plugin plugin, CommandMap commandMap, Map<String, Command> known) {
         // Paper 1.20.6+ backs this with a Brigadier forwarding map whose
         // iterators don't support remove(): but Map#remove(key) works.
         // Snapshot the matching keys first, then remove by key.
@@ -84,7 +92,7 @@ final class PluginUnloader {
             Command command = known.get(key);
             known.remove(key);
             if (command != null) {
-                command.unregister(Bukkit.getCommandMap());
+                command.unregister(commandMap);
             }
         }
         if (!toRemove.isEmpty()) {
@@ -92,9 +100,14 @@ final class PluginUnloader {
         }
     }
 
+    /** The server's command map. {@code Bukkit.getCommandMap()} is Paper-only; CraftServer has it on both. */
+    private static CommandMap commandMap() throws ReflectiveOperationException {
+        Object server = Bukkit.getServer();
+        return (CommandMap) server.getClass().getMethod("getCommandMap").invoke(server);
+    }
+
     /** The live (mutable) backing map behind the command map's known commands. */
-    private static Map<String, Command> mutableKnownCommands() throws ReflectiveOperationException {
-        Object commandMap = Bukkit.getCommandMap();
+    private static Map<String, Command> mutableKnownCommands(CommandMap commandMap) throws ReflectiveOperationException {
         Field field = SimpleCommandMap.class.getDeclaredField("knownCommands");
         field.setAccessible(true);
         @SuppressWarnings("unchecked")
