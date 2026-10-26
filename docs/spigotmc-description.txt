@@ -29,6 +29,7 @@ tells you when one is out, and can install it for you.
 [SIZE=6][COLOR=#0000ff][B]Will it work on my server?[/B][/COLOR][/SIZE]
 [LIST]
 [*][B]Server software:[/B] Paper, Folia, Spigot, or a Paper fork like Purpur
+[*][B]Proxy:[/B] Velocity 3.4 to 4.3, with the download that has [ICODE]velocity[/ICODE] in its name
 [*][B]Minecraft:[/B] 1.20.5 to 1.21.x with the plain download, 26.x (including 26.3) with the [ICODE]-mc26[/ICODE] download
 [*][B]Java:[/B] 21+ for 1.21.x or 25+ for 26.x
 [*][B]Anything else:[/B] Nothing. No dependencies.
@@ -36,6 +37,7 @@ tells you when one is out, and can install it for you.
 [SPOILER="Which download do I need?"]
 Minecraft 1.20.5 to 1.21.x: the plain jar.
 Minecraft 26.x, including 26.3: the jar ending in [ICODE]-mc26[/ICODE].
+A Velocity proxy: the jar with [ICODE]velocity[/ICODE] in its name. It installs a downloaded update when the proxy shuts down, because Velocity can't swap a plugin while it runs. Its command is [ICODE]/pulseproxy[/ICODE] (or [ICODE]/ppp[/ICODE]), so [ICODE]/pluginpulse[/ICODE] still reaches the companion on your servers.
 
 On Spigot, notices are plain text with the link written out, instead of clickable.
 [/SPOILER]

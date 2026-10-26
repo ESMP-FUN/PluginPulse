@@ -1,9 +1,9 @@
 package io.github.darkstarworks.pluginpulse;
 
+import io.github.darkstarworks.pluginpulse.engine.UpdateEngine;
 import org.bukkit.command.CommandSender;
 
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Drop-in handler for a host plugin's {@code /<plugin> update ...} subcommand.
@@ -27,43 +27,11 @@ public final class UpdateSubcommand {
 
     /** @return false when the sender lacks the updater permission */
     public boolean handle(CommandSender sender, String[] args) {
-        if (!sender.hasPermission(updater.permission())) {
-            return false;
-        }
-        String action = args.length == 0 ? "check" : args[0].toLowerCase(Locale.ROOT);
-        switch (action) {
-            case "check" -> updater.checkNow(sender);
-            case "download", "install" -> updater.downloadAndStage(sender);
-            case "ignore" -> {
-                if (args.length < 2) {
-                    sender.sendMessage("Usage: update ignore <version>");
-                } else {
-                    updater.ignoreVersion(args[1]);
-                    sender.sendMessage("Ignoring version " + args[1] + " (until a newer release).");
-                }
-            }
-            case "unignore" -> {
-                if (args.length < 2) {
-                    sender.sendMessage("Usage: update unignore <version>");
-                } else {
-                    updater.unignoreVersion(args[1]);
-                    sender.sendMessage("No longer ignoring version " + args[1] + ".");
-                }
-            }
-            case "restore" -> updater.restoreBackup(sender);
-            case "apply", "reload" -> updater.applyNow(sender);
-            case "status" -> sender.sendMessage("Status: " + updater.statusLine());
-            default -> sender.sendMessage(
-                    "Unknown update action. Try: check, download, apply, ignore <version>, unignore <version>, restore, status");
-        }
-        return true;
+        return updater.handle(sender, args);
     }
 
     /** Tab-completion options for the first argument after "update". */
     public List<String> tabComplete(String[] args) {
-        if (args.length <= 1) {
-            return List.of("check", "download", "apply", "ignore", "unignore", "restore", "status");
-        }
-        return List.of();
+        return args.length <= 1 ? UpdateEngine.ACTIONS : List.of();
     }
 }

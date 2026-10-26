@@ -71,11 +71,14 @@ The plugins you list don't need to know PluginPulse exists.
 | | |
 |---|---|
 | **Server software** | Paper, Folia, Spigot, or a Paper fork like Purpur |
+| **Proxy** | Velocity 3.4 to 4.3, with the download that has `velocity` in its name |
 | **Minecraft** | 1.20.5 to 1.21.x with the plain download, 26.x (including 26.3) with the `-mc26` download |
 | **Java** | 21+ for 1.21.x, 25+ for 26.x |
 | **Anything else** | Nothing. No dependencies |
 
 On Spigot, notices are plain text with the link written out, instead of clickable.
+
+On Velocity, a downloaded update is installed when the proxy shuts down, because Velocity can't swap a plugin while it runs. Its command is `/pulseproxy` (or `/ppp`) with the same actions, so `/pluginpulse` still reaches the companion on your servers. Give staff the `pluginpulse.admin` permission with a permissions plugin such as LuckPerms.
 
 ---
 
@@ -181,7 +184,7 @@ More info? [Read about it in the browser tool guide](https://esmp-fun.github.io/
 
 <center>
 
-**Paper, Folia, Spigot** <br>
+**Paper, Folia, Spigot, Velocity** <br>
 **Minecraft 1.20.5 to 26.x**, **Java 21+** <br>
 **No dependencies**
 

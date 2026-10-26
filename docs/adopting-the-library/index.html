@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Adopting the library | PluginPulse docs</title>
-  <meta name="description" content="Add self-updating to your Paper/Spigot plugin: shade PluginPulse, drop in a pluginpulse.yml, and call one method from onEnable.">
+  <meta name="description" content="Add self-updating to your Paper, Spigot or Velocity plugin: shade PluginPulse, drop in a pluginpulse.yml, and call one method from onEnable.">
   <link rel="canonical" href="https://esmp-fun.github.io/PluginPulse/adopting-the-library/">
   <link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
   <meta name="theme-color" content="#0f1216">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="PluginPulse">
   <meta property="og:title" content="Make your own plugin update itself">
-  <meta property="og:description" content="Add self-updating to your Paper/Spigot plugin: shade PluginPulse, drop in a pluginpulse.yml, and call one method from onEnable.">
+  <meta property="og:description" content="Add self-updating to your Paper, Spigot or Velocity plugin: shade PluginPulse, drop in a pluginpulse.yml, and call one method from onEnable.">
   <meta property="og:url" content="https://esmp-fun.github.io/PluginPulse/adopting-the-library/">
   <meta property="og:image" content="https://esmp-fun.github.io/PluginPulse/assets/og.png">
   <meta property="og:image:width" content="1200">
@@ -47,7 +47,7 @@
 
   <main class="content">
     <h1>Path 1: Shade the library into your own plugin</h1>
-    <p class="lede"><strong>Audience:</strong> you write and build your own Paper/Spigot plugin, and
+    <p class="lede"><strong>Audience:</strong> you write and build your own Paper, Spigot or Velocity plugin, and
       you want it to check for and (optionally) install its own updates.</p>
 
     <p>This guide is self-contained. If a term is unfamiliar, see the
@@ -264,6 +264,19 @@ public final class MyPlugin extends JavaPlugin {
     <p>The full builder surface (modes, sources, tracks, message customization, and the opt-in
       hot-reload artifact) is documented in the
       <a href="https://github.com/ESMP-FUN/PluginPulse#readme">developer reference</a>.</p>
+
+    <h3 id="velocity">On Velocity</h3>
+    <p>Depend on <code>pluginpulse-velocity</code> instead of <code>pluginpulse-core</code> (same
+      version, same relocation line). The same <code>pluginpulse.yml</code> works; start it from
+      your proxy init handler:</p>
+    <pre><code>@Subscribe
+public void onInit(ProxyInitializeEvent event) {
+    VelocityPulse.bootstrap(proxy, this, dataDirectory); // your @DataDirectory
+}</code></pre>
+    <p><code>VelocityUpdater.builder(proxy, this)</code> offers the same options as the Paper
+      builder. Downloaded updates are put in place when the proxy shuts down, because Velocity
+      can't swap a running plugin; the updater handles that on its own. Hot reload and
+      <code>track</code> don't apply on a proxy.</p>
 
     <h2>4. Verify it worked</h2>
     <ol>

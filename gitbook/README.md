@@ -20,7 +20,7 @@ New to a word? See the [glossary](glossary.md). Not sure where a plugin's update
 * **Tells the right people**: a message in the console and in-game for staff when an update is out, with buttons to click.
 * **Installs safely**: every download is checked against the fingerprint the author published, your current jar is backed up first, and nothing changes until you restart. One command puts the previous version back.
 * **Waits out bad releases if you want**: it can leave a brand-new release alone for a few hours, so an author's quick fix lands first.
-* **Runs on Paper, Spigot and Folia**, 1.20.5 and newer, Java 21 or newer.
+* **Runs on Paper, Spigot and Folia**, 1.20.5 and newer, Java 21 or newer, and on **Velocity proxies** 3.4 to 4.3 with a companion of its own.
 
 ## Links
 

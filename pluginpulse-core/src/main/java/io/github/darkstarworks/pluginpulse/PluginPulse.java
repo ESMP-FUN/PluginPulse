@@ -1,9 +1,7 @@
 package io.github.darkstarworks.pluginpulse;
 
-import io.github.darkstarworks.pluginpulse.source.GitHubReleasesSource;
-import io.github.darkstarworks.pluginpulse.source.HangarSource;
-import io.github.darkstarworks.pluginpulse.source.JenkinsSource;
-import io.github.darkstarworks.pluginpulse.source.ModrinthSource;
+import io.github.darkstarworks.pluginpulse.engine.SourceConfig;
+import io.github.darkstarworks.pluginpulse.source.UpdateSource;
 import io.github.darkstarworks.pluginpulse.version.ServerVersion;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -63,11 +61,9 @@ public final class PluginPulse {
                 cfg = YamlConfiguration.loadConfiguration(reader);
             }
 
-            String modrinth = trimToNull(cfg.getString("modrinth"));
-            String github = trimToNull(cfg.getString("github"));
-            String hangar = trimToNull(cfg.getString("hangar"));
-            String jenkins = trimToNull(cfg.getString("jenkins"));
-            if (modrinth == null && github == null && hangar == null && jenkins == null) {
+            java.util.List<UpdateSource> sources = SourceConfig.sources(cfg::get, SourceConfig.Platform.BUKKIT,
+                    plugin.getLogger(), "PluginPulse", "in pluginpulse.yml");
+            if (sources.isEmpty()) {
                 plugin.getLogger().warning("PluginPulse: pluginpulse.yml has no modrinth/github/hangar/jenkins source, updater disabled.");
                 return null;
             }
@@ -95,42 +91,9 @@ public final class PluginPulse {
                     .checkInterval(Duration.ofHours(Math.max(1L, intervalHours)))
                     .minimumReleaseAge(holdNew ? Duration.ofHours(Math.max(1L, holdHours)) : Duration.ZERO);
 
-            // First declared source is primary; the rest are ordered fallbacks.
-            // The order is taken from the optional "source-order" list when present
-            // (e.g. [hangar, modrinth]); any configured source omitted from the list
-            // is appended afterwards, and the historical default is modrinth > github
-            // > hangar > jenkins when no list is given (CI snapshots rank last).
-            java.util.Map<String, io.github.darkstarworks.pluginpulse.source.UpdateSource> available = new java.util.LinkedHashMap<>();
-            // Optional token for a PRIVATE GitHub repo, supplied literally or as
-            // a ${ENV_VAR} reference (see Secrets). Authenticates both the version
-            // check and the download; null/absent keeps the anonymous public path.
-            String githubToken = Secrets.resolve(cfg.getString("github-token"));
-            if (modrinth != null) available.put("modrinth", new ModrinthSource(modrinth));
-            if (github != null) available.put("github", new GitHubReleasesSource(github, githubToken, null));
-            if (hangar != null) available.put("hangar", new HangarSource(hangar));
-            if (jenkins != null) {
-                available.put("jenkins", new JenkinsSource(jenkins,
-                        jenkinsArtifactFilter(plugin, cfg.getString("jenkins-artifact"))));
-                // Jenkins archives raw CI artifacts with no checksums; with the
-                // require-hash default (true) a download would always be refused.
-                if (!cfg.contains("require-hash")) {
-                    plugin.getLogger().info("PluginPulse: the jenkins source publishes no checksums, "
-                            + "download/auto modes need require-hash: false in pluginpulse.yml.");
-                }
-            }
-
-            java.util.List<String> ordered = new java.util.ArrayList<>();
-            for (String raw : cfg.getStringList("source-order")) {
-                if (raw == null) continue;
-                String key = raw.trim().toLowerCase(java.util.Locale.ROOT);
-                if (available.containsKey(key) && !ordered.contains(key)) ordered.add(key);
-            }
-            for (String key : available.keySet()) {
-                if (!ordered.contains(key)) ordered.add(key);
-            }
-
-            boolean primarySet = false;
-            for (String key : ordered) primarySet = addSource(builder, available.get(key), primarySet);
+            // First source is primary; the rest are ordered fallbacks.
+            builder.source(sources.get(0));
+            for (int i = 1; i < sources.size(); i++) builder.fallbackSource(sources.get(i));
 
             String permission = trimToNull(cfg.getString("permission"));
             if (permission != null) builder.permission(permission);
@@ -215,39 +178,9 @@ public final class PluginPulse {
         return engine;
     }
 
-    /**
-     * Compile the optional {@code jenkins-artifact} regex; an invalid pattern
-     * logs a warning and falls back to the default jar filter instead of
-     * disabling the whole updater.
-     */
-    private static java.util.function.Predicate<String> jenkinsArtifactFilter(JavaPlugin plugin, String regex) {
-        String r = trimToNull(regex);
-        if (r == null) return null;
-        try {
-            return JenkinsSource.artifactRegex(r);
-        } catch (java.util.regex.PatternSyntaxException e) {
-            plugin.getLogger().warning("PluginPulse: invalid jenkins-artifact regex '" + r
-                    + "': using the default .jar filter instead.");
-            return null;
-        }
-    }
-
-    private static boolean addSource(Updater.Builder builder, io.github.darkstarworks.pluginpulse.source.UpdateSource source, boolean primarySet) {
-        if (primarySet) {
-            builder.fallbackSource(source);
-        } else {
-            builder.source(source);
-        }
-        return true;
-    }
-
     private static UpdateMode parseMode(String name) {
-        return switch (name.toLowerCase(java.util.Locale.ROOT)) {
-            case "check-only", "check", "silent" -> UpdateMode.CHECK_ONLY;
-            case "download" -> UpdateMode.DOWNLOAD;
-            case "auto-stage", "auto" -> UpdateMode.AUTO_STAGE;
-            default -> UpdateMode.NOTIFY;
-        };
+        UpdateMode mode = SourceConfig.parseMode(name);
+        return mode != null ? mode : UpdateMode.NOTIFY;
     }
 
     private static String trimToNull(String s) {

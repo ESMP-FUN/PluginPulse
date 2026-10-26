@@ -1,0 +1,10 @@
+{
+  "id": "pluginpulse",
+  "name": "PluginPulse Companion",
+  "version": "${version}",
+  "description": "Keeps the other plugins on your proxy up to date, driven by PluginPulse.",
+  "url": "https://github.com/ESMP-FUN/PluginPulse",
+  "authors": ["darkstarworks"],
+  "dependencies": [],
+  "main": "io.github.darkstarworks.ppcompanion.velocity.CompanionVelocity"
+}

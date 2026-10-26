@@ -3,15 +3,15 @@
 // final main classes) without its source. Also the boot-testable reference the
 // in-browser JS engine is golden-tested against.
 plugins {
-    id("com.gradleup.shadow") version "9.0.0"
+    id("com.gradleup.shadow") version "9.6.1"
 }
 
 dependencies {
     implementation("me.lucko:jar-relocator:1.7")
-    implementation("org.ow2.asm:asm:9.7.1")
-    implementation("org.ow2.asm:asm-commons:9.7.1")
-    implementation("org.yaml:snakeyaml:2.2")
-    implementation("info.picocli:picocli:4.7.6")
+    implementation("org.ow2.asm:asm:9.11.1")
+    implementation("org.ow2.asm:asm-commons:9.11.1")
+    implementation("org.yaml:snakeyaml:2.7")
+    implementation("info.picocli:picocli:4.7.7")
 }
 
 tasks.shadowJar {
@@ -21,10 +21,20 @@ tasks.shadowJar {
     }
 }
 
-// Bundle the built core jar as a payload resource the injector reads at runtime.
+// The core library as one jar: the Bukkit side plus the shared common module.
+val corePayloadJar = tasks.register<Jar>("corePayloadJar") {
+    dependsOn(":pluginpulse-core:jar", ":pluginpulse-common:jar")
+    archiveFileName.set("pluginpulse-core-payload.jar")
+    destinationDirectory.set(layout.buildDirectory.dir("core-payload"))
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from({ zipTree(project(":pluginpulse-core").tasks.named("jar").get().outputs.files.singleFile) })
+    from({ zipTree(project(":pluginpulse-common").tasks.named("jar").get().outputs.files.singleFile) })
+    exclude("META-INF/*.SF", "META-INF/*.RSA", "META-INF/*.DSA", "META-INF/*.EC", "module-info.class")
+}
+
+// Bundle the core payload as a resource the injector reads at runtime.
 tasks.processResources {
-    dependsOn(":pluginpulse-core:jar")
-    from(project(":pluginpulse-core").tasks.named("jar")) {
+    from(corePayloadJar) {
         // NB: not a ".jar" extension: the shadow plugin strips nested *.jar
         // resources from the fat jar. jar-relocator reads it as a zip regardless.
         rename { "pluginpulse-core.jar.payload" }
@@ -37,12 +47,13 @@ tasks.processResources {
 // installs like a CLI-injected or hand-shaded one. Both live under the same
 // package prefix, so the engine's existing relocation covers them and the
 // hot-reload classes stay inert unless pluginpulse.yml turns them on.
-val webPayloadJar by tasks.registering(Jar::class) {
-    dependsOn(":pluginpulse-core:jar", ":pluginpulse-hotreload:jar")
+val webPayloadJar = tasks.register<Jar>("webPayloadJar") {
+    dependsOn(":pluginpulse-core:jar", ":pluginpulse-common:jar", ":pluginpulse-hotreload:jar")
     archiveFileName.set("pluginpulse-web-payload.jar")
     destinationDirectory.set(layout.buildDirectory.dir("web-payload"))
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from({ zipTree(project(":pluginpulse-core").tasks.named("jar").get().outputs.files.singleFile) })
+    from({ zipTree(project(":pluginpulse-common").tasks.named("jar").get().outputs.files.singleFile) })
     from({ zipTree(project(":pluginpulse-hotreload").tasks.named("jar").get().outputs.files.singleFile) })
     exclude("META-INF/*.SF", "META-INF/*.RSA", "META-INF/*.DSA", "META-INF/*.EC", "module-info.class")
 }

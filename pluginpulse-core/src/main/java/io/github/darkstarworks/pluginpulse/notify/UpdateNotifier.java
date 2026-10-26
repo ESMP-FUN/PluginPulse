@@ -4,7 +4,6 @@ import io.github.darkstarworks.pluginpulse.UpdateInfo;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -13,19 +12,18 @@ import java.util.Map;
  * Adventure: they fall back to plain text with the download URL spelled out,
  * so the updater still works everywhere.
  *
- * <p>Every MiniMessage template can be overridden by the host plugin;
- * placeholders are literal tokens: {@code <prefix>}, {@code <current>},
- * {@code <latest>}, {@code <page>}, {@code <cmdroot>}. Overrides only affect
- * the Adventure path; the plain fallback uses a fixed, readable format.</p>
+ * <p>Every MiniMessage template can be overridden by the host plugin, see
+ * {@link NoticeTemplates} for the placeholders. Overrides only affect the
+ * Adventure path; the plain fallback uses a fixed, readable format.</p>
  */
 public final class UpdateNotifier {
 
-    public static final String KEY_CONSOLE = "console";
-    public static final String KEY_PLAYER = "player";
-    public static final String KEY_BUTTONS = "buttons";
-    public static final String KEY_DOWNLOAD = "download-button";
-    public static final String KEY_STAGED_RELOAD = "staged-reload";
-    public static final String KEY_STAGED_RESTART = "staged-restart";
+    public static final String KEY_CONSOLE = NoticeTemplates.KEY_CONSOLE;
+    public static final String KEY_PLAYER = NoticeTemplates.KEY_PLAYER;
+    public static final String KEY_BUTTONS = NoticeTemplates.KEY_BUTTONS;
+    public static final String KEY_DOWNLOAD = NoticeTemplates.KEY_DOWNLOAD;
+    public static final String KEY_STAGED_RELOAD = NoticeTemplates.KEY_STAGED_RELOAD;
+    public static final String KEY_STAGED_RESTART = NoticeTemplates.KEY_STAGED_RESTART;
 
     /** Whether Adventure/MiniMessage is available (Paper yes, Spigot no). */
     private static final boolean ADVENTURE_PRESENT = detectAdventure();
@@ -39,47 +37,20 @@ public final class UpdateNotifier {
         }
     }
 
-    private static final Map<String, String> DEFAULTS = Map.of(
-            KEY_CONSOLE, "<prefix> <green>Update available:</green> <yellow><latest></yellow> <gray>(current: <current>)</gray>",
-            KEY_PLAYER, "<prefix> <gray>You are using version <yellow><current></yellow>, "
-                    + "latest version is <green><latest></green>."
-                    + "<newline><click:open_url:'<page>'><hover:show_text:'<gray>Open the download page'>"
-                    + "<aqua>[Download Latest Version]</aqua></hover></click>",
-            // In-game background download (needs a command root to run the command).
-            KEY_DOWNLOAD, " <click:run_command:'<cmdroot> update download'>"
-                    + "<hover:show_text:'<gray>Download it now, in the background'>"
-                    + "<green>[Download & Install]</green></hover></click>",
-            KEY_BUTTONS, " <click:run_command:'<cmdroot> update ignore <latest>'>"
-                    + "<hover:show_text:'<gray>Hide notifications for this version'><gray>[Ignore]</gray></hover></click>",
-            // Post-download "ready" notices. RELOAD offers a no-restart install;
-            // RESTART is shown when hot reload isn't available/safe.
-            KEY_STAGED_RELOAD, "<prefix> <green>Update <latest> downloaded.</green> "
-                    + "<click:run_command:'<cmdroot> update apply'>"
-                    + "<hover:show_text:'<gray>Install it now, no restart needed'><aqua>[Install Now]</aqua></hover></click>",
-            KEY_STAGED_RESTART, "<prefix> <green>Update <latest> downloaded and staged.</green> "
-                    + "<gray>Restart the server to apply it.</gray>"
-    );
-
-    private final String prefix;
-    private final String commandRoot; // e.g. "/tcp", enables the [Ignore] button
-    private final Map<String, String> messages;
+    private final NoticeTemplates templates;
 
     public UpdateNotifier(String prefix, String commandRoot, Map<String, String> overrides) {
-        this.prefix = prefix;
-        this.commandRoot = commandRoot;
-        this.messages = new HashMap<>(DEFAULTS);
-        this.messages.putAll(overrides);
+        this.templates = new NoticeTemplates(prefix, commandRoot, Map.of(), overrides);
     }
 
     public void notifyConsole(String pluginName, String current, UpdateInfo info) {
         if (ADVENTURE_PRESENT) {
-            AdventureText.console(render(KEY_CONSOLE, current, info));
+            AdventureText.console(templates.render(KEY_CONSOLE, current, info));
             for (String line : info.changelog().split("\n")) {
                 if (!line.isBlank()) AdventureText.console(line);
             }
         } else {
-            Bukkit.getConsoleSender().sendMessage(
-                    stripTags(prefix) + " Update available: " + info.version() + " (current: " + current + ")");
+            Bukkit.getConsoleSender().sendMessage(templates.plainConsole(current, info));
             for (String line : info.changelog().split("\n")) {
                 if (!line.isBlank()) Bukkit.getConsoleSender().sendMessage(stripTags(line));
             }
@@ -88,24 +59,10 @@ public final class UpdateNotifier {
 
     /** Player/CommandSender notice with clickable download link (+ optional buttons). */
     public void notifySender(CommandSender sender, String current, UpdateInfo info) {
-        boolean hasCmd = commandRoot != null && !commandRoot.isBlank();
         if (ADVENTURE_PRESENT) {
-            String template = messages.get(KEY_PLAYER);
-            if (hasCmd) {
-                // Offer both: open the page, OR download it in the background here.
-                template += messages.get(KEY_DOWNLOAD) + messages.get(KEY_BUTTONS);
-            }
-            AdventureText.send(sender, render(KEY_PLAYER, current, info, template));
+            AdventureText.send(sender, templates.playerNotice(current, info));
         } else {
-            String page = pageUrl(info);
-            StringBuilder msg = new StringBuilder(stripTags(prefix))
-                    .append(" Update available: ").append(info.version())
-                    .append(" (current: ").append(current).append(").");
-            if (!page.isEmpty()) msg.append(" Download: ").append(page);
-            if (hasCmd) {
-                msg.append("  Run '").append(commandRoot).append(" update download' to install.");
-            }
-            sender.sendMessage(msg.toString());
+            sender.sendMessage(templates.plainPlayer(current, info));
         }
     }
 
@@ -116,69 +73,36 @@ public final class UpdateNotifier {
      * is needed.
      */
     public void notifyStaged(CommandSender sender, UpdateInfo info, boolean canReload) {
-        boolean offerReload = canReload && commandRoot != null && !commandRoot.isBlank();
-        String key = offerReload ? KEY_STAGED_RELOAD : KEY_STAGED_RESTART;
         if (ADVENTURE_PRESENT) {
-            AdventureText.send(sender, render(key, "", info));
+            AdventureText.send(sender, templates.render(templates.stagedKey(canReload), "", info));
         } else {
-            sender.sendMessage(plainStaged(key, info, offerReload));
+            sender.sendMessage(templates.plainStaged(info, canReload));
         }
     }
 
     /** Console form of the post-download notice. */
     public void notifyStagedConsole(String pluginName, UpdateInfo info, boolean canReload) {
-        boolean offerReload = canReload && commandRoot != null && !commandRoot.isBlank();
-        String key = offerReload ? KEY_STAGED_RELOAD : KEY_STAGED_RESTART;
         if (ADVENTURE_PRESENT) {
-            AdventureText.console(render(key, "", info));
+            AdventureText.console(templates.render(templates.stagedKey(canReload), "", info));
         } else {
-            Bukkit.getConsoleSender().sendMessage(plainStaged(key, info, offerReload));
+            Bukkit.getConsoleSender().sendMessage(templates.plainStaged(info, canReload));
         }
     }
 
     /** Rendered MiniMessage string for {@code key} (Adventure path only). */
     public String render(String key, String current, UpdateInfo info) {
-        return render(key, current, info, messages.get(key));
+        return templates.render(key, current, info);
     }
 
-    private String render(String key, String current, UpdateInfo info, String template) {
-        return template
-                .replace("<prefix>", prefix)
-                .replace("<current>", safeVersion(current))
-                .replace("<latest>", safeVersion(info.version()))
-                .replace("<page>", safeUrl(pageUrl(info)))
-                .replace("<cmdroot>", commandRoot == null ? "" : commandRoot);
-    }
-
-    private static String pageUrl(UpdateInfo info) {
-        return info.releasePageUrl() != null ? info.releasePageUrl()
-                : info.downloadUrl() != null ? info.downloadUrl() : "";
-    }
-
-    /**
-     * Version text goes inside clickable commands, so anything that could close
-     * the quote or open a tag is dropped rather than trusted from the source.
-     */
     static String safeVersion(String version) {
-        return version == null ? "" : version.replaceAll("[^A-Za-z0-9._+\\-]", "");
+        return NoticeTemplates.safeVersion(version);
     }
 
     static String safeUrl(String url) {
-        return url.replaceAll("['<>\\\\\\s]", "");
+        return NoticeTemplates.safeUrl(url);
     }
 
-    /** Drop MiniMessage tags for the plain-text (Spigot) fallback. */
     static String stripTags(String s) {
-        // Hover text is quoted and carries its own tags, so drop it whole first.
-        return s.replace("<newline>", " ")
-                .replaceAll("<hover:show_text:'[^']*'>", "")
-                .replaceAll("<[^>]*>", "")
-                .trim();
-    }
-
-    /** Plain-text staged notice: the [Install Now] button can't be clicked, so name the command. */
-    private String plainStaged(String key, UpdateInfo info, boolean offerReload) {
-        String text = stripTags(render(key, "", info)).replace(" [Install Now]", "");
-        return offerReload ? text + " Run '" + commandRoot + " update apply' to install it now." : text;
+        return NoticeTemplates.stripTags(s);
     }
 }

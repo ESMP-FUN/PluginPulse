@@ -31,15 +31,27 @@ public final class GitHubReleasesSource implements UpdateSource {
     private final String repo; // "owner/name"
     private final String token; // optional, for private repos
     private final Predicate<String> assetFilter;
+    private final Predicate<String> preferredAsset;
 
     public GitHubReleasesSource(String repo) {
         this(repo, null, DEFAULT_ASSET_FILTER);
     }
 
     public GitHubReleasesSource(String repo, String token, Predicate<String> assetFilter) {
+        this(repo, token, assetFilter, null);
+    }
+
+    /**
+     * @param preferredAsset among the assets the filter accepts, take the first
+     *                       one this also accepts (e.g. the Velocity jar of a
+     *                       release that ships one per platform); may be null
+     */
+    public GitHubReleasesSource(String repo, String token, Predicate<String> assetFilter,
+                                Predicate<String> preferredAsset) {
         this.repo = repo;
         this.token = token;
         this.assetFilter = assetFilter != null ? assetFilter : DEFAULT_ASSET_FILTER;
+        this.preferredAsset = preferredAsset;
     }
 
     private boolean hasToken() {
@@ -72,7 +84,7 @@ public final class GitHubReleasesSource implements UpdateSource {
             headers.put("Authorization", "Bearer " + token);
         }
         String json = ctx.http().get("https://api.github.com/repos/" + repo + "/releases?per_page=15", headers);
-        Parsed parsed = parse(json, ctx.track(), assetFilter);
+        Parsed parsed = parse(json, ctx.track(), assetFilter, preferredAsset);
         if (parsed == null) {
             throw new IllegalStateException("GitHub repo " + repo + " has no matching releases");
         }
@@ -108,6 +120,10 @@ public final class GitHubReleasesSource implements UpdateSource {
      * {@code -suffix} are skipped unless nothing else matches).
      */
     static Parsed parse(String json, String track, Predicate<String> assetFilter) {
+        return parse(json, track, assetFilter, null);
+    }
+
+    static Parsed parse(String json, String track, Predicate<String> assetFilter, Predicate<String> preferredAsset) {
         JsonArray releases = JsonParser.parseString(json).getAsJsonArray();
         JsonObject chosen = null;
         JsonObject fallback = null;
@@ -140,9 +156,13 @@ public final class GitHubReleasesSource implements UpdateSource {
         if (assets != null) {
             for (JsonElement el : assets) {
                 JsonObject a = el.getAsJsonObject();
-                if (asset == null && assetFilter.test(a.get("name").getAsString())) {
+                String name = a.get("name").getAsString();
+                if (!assetFilter.test(name)) continue;
+                if (preferredAsset != null && preferredAsset.test(name)) {
                     asset = a;
+                    break;
                 }
+                if (asset == null) asset = a;
             }
             if (asset != null) {
                 String want = asset.get("name").getAsString() + ".sha256";

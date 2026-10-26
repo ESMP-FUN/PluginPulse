@@ -104,9 +104,23 @@ The command is `/pluginpulse` (aliases `/ppc`, `/pulse`), permission `pluginpuls
 
 **How staged updates apply:** downloading stages the new jar into the server's update folder. **Restart the server** and the server swaps it in on boot. There's no live jar-swapping. That's deliberate, so nothing changes underneath a running server.
 
+## Running a Velocity proxy?
+
+There is a separate companion for Velocity proxies: **`pluginpulse-companion-velocity-<version>.jar`** on the same [Releases page](https://github.com/ESMP-FUN/PluginPulse/releases). It works on Velocity 3.4 up to 4.3. Install it the same way, in the proxy's `plugins/` folder, then open `plugins/pluginpulse/config.yml`. The file walks you through it.
+
+What is different on a proxy:
+
+* **The command is `/pulseproxy`** (alias `/ppp`), with the same actions: `list`, `check`, `download`, `restore` and `reload`. It has its own name so that `/pluginpulse` still reaches the companion on the servers behind the proxy.
+* **The name on the left** of each entry is the plugin's id or name as shown by `/velocity plugins`, for example `luckperms`.
+* **Updates are installed when the proxy shuts down.** Velocity can't swap a plugin while it runs, so a downloaded update waits until you stop or restart the proxy, then it is put in place and runs from the next start. Restarting the proxy is enough.
+* **On Windows** the running jar is locked, so putting the update in place can fail. The console then tells you which file to move where, with the proxy stopped.
+* **Permissions:** Velocity has no "op", so give `pluginpulse.admin` to your staff with a permissions plugin such as LuckPerms. The proxy console can always use `/pulseproxy`.
+* **The right file is picked for you.** When a plugin publishes one file for Paper and one for Velocity, the companion takes the Velocity one.
+* **No `hot-reload` and no `track`** on a proxy. Everything else (`mode`, `hold-new-updates`, `require-hash`, `github-token`, `jenkins-artifact`) works the same.
+
 ## FAQ
 
-* **Does it work on Spigot?** Yes: Paper, Spigot, and Folia.
+* **Does it work on Spigot?** Yes: Paper, Spigot, and Folia. Velocity proxies have their own companion, see above.
 * **My plugin isn't on Modrinth/Hangar.** Use `github: owner/repo` if its releases are on GitHub. If it's published nowhere with an API, the companion can't track it.
 * **Is it safe?** By default (`notify`), nothing is downloaded. You're only told about it. Even in `download`/`auto-stage`, updates are checksum-verified, the old jar is backed up, and nothing is swapped until you restart.
 * **A plugin shows as "skipped".** The companion prints why (not installed, no source configured, `mode: off`, etc.). Check the name matches `/plugins` exactly and it has one source.

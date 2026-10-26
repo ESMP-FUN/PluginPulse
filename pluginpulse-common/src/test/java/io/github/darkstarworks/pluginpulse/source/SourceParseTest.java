@@ -144,6 +144,33 @@ class SourceParseTest {
         assertNull(parsed.sha256SidecarUrl());
     }
 
+    private static final String GITHUB_MULTI_JSON = """
+            [
+              {"draft": false, "prerelease": false, "tag_name": "v2.0.0",
+               "html_url": "https://github.com/o/r/releases/tag/v2.0.0", "body": "",
+               "assets": [
+                 {"name": "plugin-paper-2.0.0.jar", "size": 1, "browser_download_url": "https://x/paper.jar"},
+                 {"name": "plugin-Velocity-2.0.0.jar", "size": 2, "browser_download_url": "https://x/velocity.jar"}
+               ]}
+            ]
+            """;
+
+    @Test
+    void githubPrefersTheVelocityJarWhenAsked() {
+        GitHubReleasesSource.Parsed parsed = GitHubReleasesSource.parse(GITHUB_MULTI_JSON, null,
+                n -> n.endsWith(".jar"), n -> n.toLowerCase().contains("velocity"));
+        assertEquals("plugin-Velocity-2.0.0.jar", parsed.info().fileName());
+    }
+
+    @Test
+    void githubPreferenceFallsBackToTheFirstJar() {
+        GitHubReleasesSource.Parsed parsed = GitHubReleasesSource.parse(GITHUB_MULTI_JSON, null,
+                n -> n.endsWith(".jar"), n -> n.contains("waterfall"));
+        assertEquals("plugin-paper-2.0.0.jar", parsed.info().fileName());
+        assertEquals("plugin-paper-2.0.0.jar", GitHubReleasesSource.parse(GITHUB_MULTI_JSON, null,
+                n -> n.endsWith(".jar")).info().fileName());
+    }
+
     // ==== Hangar ====
 
     private static final String HANGAR_JSON = """

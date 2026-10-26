@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **Velocity support, for the library and the companion.** Plugins for Velocity proxies can shade `pluginpulse-velocity` and use the same `pluginpulse.yml`, and proxy owners get their own companion jar, run with `/pulseproxy` (or `/ppp`) so it never hides `/pluginpulse` on the servers behind it. Works on Velocity 3.4 up to 4.3. Downloaded updates are put in place when the proxy shuts down, since Velocity can't swap a running plugin.
+- **Picks the Velocity download** when a plugin publishes one file per platform: Modrinth and Hangar are asked for Velocity builds, and on GitHub a file with "velocity" in its name is preferred.
+
+### Changed
+- **The platform-free part of the library now lives in `pluginpulse-common`.** `pluginpulse-core` pulls it in on its own, so a build that shades core keeps working with no change. The Paper API is untouched.
+- **Updated the build tools and libraries** to their current releases, including Gradle 9.8.2.
+
+### Fixed
+- **The command-line injector reads plugins built for Java 25**, which most Minecraft 26.x plugins are. It used to stop with an "unsupported class file" error.
+
 ## [0.9.0] - 2026-09-23
 
 Tested on Paper 26.3 (build 35) and Spigot 26.3: update checks, downloads, installs on restart, installs without a restart, and the companion plugin.

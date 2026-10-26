@@ -37,13 +37,17 @@ public final class HangarSource implements UpdateSource {
 
     @Override
     public UpdateInfo fetchLatest(SourceContext ctx) throws Exception {
-        if (ctx.serverVersion() != null) {
-            // Newest release on the default channel built for this server's
-            // Minecraft version. Empty when the project renamed that channel or
-            // doesn't list this version, and then the plain latest release is used.
+        // Newest release on the default channel with a file for this platform,
+        // built for this server's Minecraft version when that is known. A proxy
+        // has no Minecraft version, but still needs the filter: the plain latest
+        // release can be one that ships no Velocity file. Empty when the project
+        // renamed that channel or doesn't list the version, and then the plain
+        // latest release is used.
+        if (ctx.serverVersion() != null || !"PAPER".equals(platform)) {
             String list = ctx.http().get(API + "/projects/" + projectSlug + "/versions?limit=1&offset=0"
                     + "&channel=Release&platform=" + platform
-                    + "&platformVersion=" + URLEncoder.encode(ctx.serverVersion(), StandardCharsets.UTF_8));
+                    + (ctx.serverVersion() != null
+                    ? "&platformVersion=" + URLEncoder.encode(ctx.serverVersion(), StandardCharsets.UTF_8) : ""));
             JsonArray result = JsonParser.parseString(list).getAsJsonObject().getAsJsonArray("result");
             if (result != null && !result.isEmpty()) {
                 return parse(result.get(0).getAsJsonObject(), platform, projectSlug);

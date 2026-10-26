@@ -1,0 +1,96 @@
+# ==============================================================================
+#  PluginPulse Companion for Velocity
+#  Keeps the other plugins on your proxy up to date, without touching them.
+# ==============================================================================
+#
+#  Which part applies to you?
+#    * Setting it up for the first time: fill in [Part 1], then [Part 2].
+#    * Just adding another plugin: go straight to [Part 2].
+#    * Want brand-new releases to wait a while first: see [Waiting].
+#
+#  After editing this file, run:  /pulseproxy reload   (or /ppp reload)
+#
+#  Players need the permission pluginpulse.admin to use /pulseproxy and to see
+#  update notices. Velocity has no "op", so give it with a permissions plugin
+#  such as LuckPerms. The proxy console can always use the command.
+
+# ==============================================================================
+# [Part 1] - About you
+# ==============================================================================
+
+# A way to reach you, sent along when PluginPulse asks Modrinth and the other
+# sites for updates. Modrinth's rules require one. An email address or the
+# address of your website both work.
+user-agent-contact: "PASTE-YOUR-EMAIL-OR-WEBSITE-HERE"
+
+# How often to look for updates, in hours (at least 1).
+check-interval-hours: 6
+
+# ==============================================================================
+# [Part 2] - The plugins to keep up to date
+# ==============================================================================
+#
+# Add one entry per plugin under "plugins:". The name on the left is the
+# plugin's id or name as shown by /velocity plugins. Give each one the place
+# its updates are published (modrinth, github, hangar or jenkins) and a mode.
+#
+# What "mode" means:
+#   off         : leave this plugin alone
+#   check-only  : look for updates quietly; only /pulseproxy shows the result
+#   notify      : look for updates and tell admins in chat and in the console
+#   download    : like notify, and run /pulseproxy download to fetch it
+#   auto-stage  : fetch every update on its own as soon as it is found
+#
+# A downloaded update is installed when the proxy shuts down, so it is running
+# from the next start. Velocity can't swap a plugin while the proxy is running.
+#
+# When a plugin publishes one file per platform, PluginPulse picks the Velocity
+# one by itself.
+
+plugins:
+  # ---- Examples (remove the '#' in front and adapt them, or delete them) ----
+  #
+  #   luckperms:
+  #     modrinth: luckperms          # the last part of its Modrinth address
+  #     mode: notify
+  #
+  #   someplugin:
+  #     github: owner/repo           # its GitHub repository (uses Releases)
+  #     mode: auto-stage
+  #
+  #   privateplugin:
+  #     github: owner/private-repo   # a private repository needs a token
+  #     github-token: "${GITHUB_TOKEN}"  # read from the GITHUB_TOKEN environment
+  #                                      # variable (recommended), or paste the
+  #                                      # token itself here
+  #     mode: auto-stage
+  #
+  #   anotherplugin:
+  #     hangar: project-name         # its Hangar project name
+  #     mode: check-only
+  #
+  #   snapshotplugin:
+  #     jenkins: https://ci.example.com/job/SnapshotPlugin/  # the job page
+  #     jenkins-artifact: "Velocity" # picks the right file when a build has several
+  #     require-hash: false          # Jenkins publishes no checksums, so without
+  #                                  # this the download is refused
+  #     mode: notify
+
+# ==============================================================================
+# [Waiting] - Let brand-new releases settle first
+# ==============================================================================
+#
+# Sometimes an update turns out to be broken and a fix follows a few hours
+# later. With this on, PluginPulse leaves a release alone until it has been out
+# for the hours below, so the fix usually lands before your proxy takes it.
+#
+# false = take updates as soon as they appear
+# true  = wait the hours below first
+#
+# Running /pulseproxy download yourself always fetches it straight away, and
+# /pulseproxy tells you when a release is being waited out. Each plugin entry
+# can set these two keys for itself as well.
+hold-new-updates: false
+
+# 18 hours means a release published in the evening is taken the next afternoon.
+hold-new-updates-hours: 18

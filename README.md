@@ -19,8 +19,8 @@ owners and jar-only users should follow their guide above instead.
 
 ---
 
-A small, dependency-free update-checker library for Paper **and Spigot**
-plugins. Shade it in, point it at where you publish releases, and your plugin
+A small, dependency-free update-checker library for Paper, Spigot **and
+Velocity** plugins. Shade it in, point it at where you publish releases, and your plugin
 gains:
 
 - **Multi-source update checking**: Modrinth, GitHub Releases, Hangar, Jenkins
@@ -40,7 +40,8 @@ gains:
 
 ## Requirements
 
-- Paper (or a fork) 1.20.5+, **or Spigot 1.20.5+**, Java 21+.
+- Paper (or a fork) 1.20.5+, **or Spigot 1.20.5+**, **or Velocity 3.4+**
+  (up to 4.3), Java 21+.
 - No runtime dependencies. On Paper, notices render as rich clickable
   MiniMessage; on Spigot (no Adventure) they automatically fall back to plain
   text with the download URL spelled out. Everything else works identically.
@@ -59,7 +60,9 @@ dependencies {
 }
 ```
 
-Shade and **relocate** it (Gradle Shadow shown):
+The `pluginpulse-core` artifact pulls in `pluginpulse-common` (the shared,
+platform-free part); both end up in your shaded jar. Shade and **relocate**
+them (Gradle Shadow shown, one line covers both):
 
 ```kotlin
 tasks.shadowJar {
@@ -273,6 +276,52 @@ restart path.
 
 Restart-install remains the recommended default; treat hot reload as a
 convenience for small, self-contained updates.
+
+## Velocity
+
+Use the `pluginpulse-velocity` artifact instead of `pluginpulse-core`. It reads
+the same `pluginpulse.yml`, so the one-file quick start works unchanged:
+
+```kotlin
+implementation("com.github.ESMP-FUN.PluginPulse:pluginpulse-velocity:v0.9.0")
+```
+
+```java
+@Subscribe
+public void onInit(ProxyInitializeEvent event) {
+    VelocityPulse.bootstrap(proxy, this, dataDirectory); // your @DataDirectory, or null
+}
+```
+
+Or the builder, with the same options as on Paper:
+
+```java
+VelocityUpdater.builder(proxy, this)
+    .source(new ModrinthSource("my-project", List.of("velocity"), List.of()))
+    .commandRoot("/myplugin")
+    .logger(logger)
+    .build()
+    .start();
+```
+
+How it differs from Paper:
+
+- **Updates go in when the proxy stops.** Velocity has no update folder and
+  can't swap a running plugin, so a download waits in
+  `plugins/<id>/pluginpulse/update/` and is moved over the live jar during
+  shutdown. The updater listens for the shutdown itself; `shutdown()` is safe
+  to call as well. On Windows the live jar is locked, so the move can fail;
+  the console then says which file to move by hand.
+- **The right download is picked for you.** Sources set up from
+  `pluginpulse.yml` ask Modrinth for `velocity` builds, ask Hangar for the
+  `VELOCITY` platform, and prefer a GitHub asset with "velocity" in its name.
+- **No hot reload and no `track`.** One proxy serves every Minecraft version,
+  so `track` and `match-server-version` don't apply.
+- **Permissions** default to `<plugin id>.update`. Velocity has no op, so
+  players need a permissions plugin to get it; the console always has it.
+- Owners can override `mode`, `check-interval-hours`, `hold-new-updates` and
+  `hold-new-updates-hours` in an `update:` section of `config.yml` in the
+  plugin's data folder, the same as on Paper.
 
 ## License
 

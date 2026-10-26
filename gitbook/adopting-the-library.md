@@ -232,6 +232,19 @@ public final class MyPlugin extends JavaPlugin {
 
 The full builder surface (modes, sources, tracks, message customization, and the opt-in hot-reload artifact) is documented in the [developer reference](https://github.com/ESMP-FUN/PluginPulse#readme).
 
+### On Velocity
+
+Depend on `pluginpulse-velocity` instead of `pluginpulse-core` (same version, same relocation line). The same `pluginpulse.yml` works; start it from your proxy init handler:
+
+```java
+@Subscribe
+public void onInit(ProxyInitializeEvent event) {
+    VelocityPulse.bootstrap(proxy, this, dataDirectory); // your @DataDirectory
+}
+```
+
+`VelocityUpdater.builder(proxy, this)` offers the same options as the Paper builder. Downloaded updates are put in place when the proxy shuts down, because Velocity can't swap a running plugin; the updater handles that on its own. Hot reload and `track` don't apply on a proxy.
+
 ## 4. Verify it worked
 
 1. **Build:** `./gradlew build` (or `mvn package`).

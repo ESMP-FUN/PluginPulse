@@ -17,6 +17,15 @@ val isMc26: Boolean = mcVariant == "26"
 val paperApiVersion: String = if (isMc26) "26.1.2.build.+" else "1.21.1-R0.1-SNAPSHOT"
 val jdkVersion: Int = if (isMc26) 25 else 21
 
+// Built against the oldest Velocity API still in use (3.4, Java 21). The same
+// calls exist unchanged up to 4.3, so one jar covers every current proxy.
+val velocityApiVersion = "3.4.0"
+
+// Modules that must never see the Paper API: the shared code and the Velocity side.
+val paperFreeModules = setOf("pluginpulse-common", "pluginpulse-velocity", "pluginpulse-companion-velocity")
+
+extra["velocityApiVersion"] = velocityApiVersion
+
 allprojects {
     group = "io.github.darkstarworks"
     version = "0.9.0"
@@ -46,12 +55,14 @@ subprojects {
     }
 
     dependencies {
-        compileOnly("io.papermc.paper:paper-api:$paperApiVersion")
+        if (project.name !in paperFreeModules) {
+            compileOnly("io.papermc.paper:paper-api:$paperApiVersion")
+            testImplementation("io.papermc.paper:paper-api:$paperApiVersion")
+        }
 
-        testImplementation(platform("org.junit:junit-bom:5.11.4"))
+        testImplementation(platform("org.junit:junit-bom:6.1.3"))
         testImplementation("org.junit.jupiter:junit-jupiter")
         testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-        testImplementation("io.papermc.paper:paper-api:$paperApiVersion")
     }
 
     // Paper 26 API stubs are class-version 69 and advertise "JVM 25 only", but we

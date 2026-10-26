@@ -17,7 +17,7 @@ import java.util.Map;
  * @param releasePageUrl  human-facing page for this release; may be null
  * @param publishedEpochMs when the release was published, in epoch milliseconds,
  *                        or -1 when the source doesn't say. Feeds the
- *                        "let a release settle first" hold in {@link Updater}.
+ *                        "let a release settle first" hold in the updater.
  */
 public record UpdateInfo(
         String version,

@@ -8,7 +8,7 @@ public record UpdateCheckResult(Status status, UpdateInfo info, Throwable error)
     /**
      * {@code HELD} means a newer version exists but hasn't been out long enough
      * yet for the configured settle-in time, see
-     * {@link Updater.Builder#minimumReleaseAge(java.time.Duration)}.
+     * the builder's {@code minimumReleaseAge}.
      */
     public enum Status { UP_TO_DATE, UPDATE_AVAILABLE, HELD, IGNORED, FAILED }
 

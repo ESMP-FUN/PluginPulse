@@ -166,9 +166,39 @@ hold-new-updates-hours: 18</code></pre>
       There's no live jar-swapping. That's deliberate, so nothing changes underneath a running
       server.</p>
 
+    <h2 id="velocity">Running a Velocity proxy?</h2>
+    <p>There is a separate companion for Velocity proxies:
+      <strong><code>pluginpulse-companion-velocity-&lt;version&gt;.jar</code></strong> on the same
+      <a href="https://github.com/ESMP-FUN/PluginPulse/releases">Releases page</a>. It works on
+      Velocity 3.4 up to 4.3. Install it the same way, in the proxy's <code>plugins/</code> folder,
+      then open <code>plugins/pluginpulse/config.yml</code>. The file walks you through it.</p>
+    <p>What is different on a proxy:</p>
+    <ul>
+      <li><strong>The command is <code>/pulseproxy</code></strong> (alias <code>/ppp</code>), with
+        the same actions: <code>list</code>, <code>check</code>, <code>download</code>,
+        <code>restore</code> and <code>reload</code>. It has its own name so that
+        <code>/pluginpulse</code> still reaches the companion on the servers behind the proxy.</li>
+      <li><strong>The name on the left</strong> of each entry is the plugin's id or name as shown by
+        <code>/velocity plugins</code>, for example <code>luckperms</code>.</li>
+      <li><strong>Updates are installed when the proxy shuts down.</strong> Velocity can't swap a
+        plugin while it runs, so a downloaded update waits until you stop or restart the proxy,
+        then it is put in place and runs from the next start. Restarting the proxy is enough.</li>
+      <li><strong>On Windows</strong> the running jar is locked, so putting the update in place can
+        fail. The console then tells you which file to move where, with the proxy stopped.</li>
+      <li><strong>Permissions:</strong> Velocity has no "op", so give <code>pluginpulse.admin</code>
+        to your staff with a permissions plugin such as LuckPerms. The proxy console can always use
+        <code>/pulseproxy</code>.</li>
+      <li><strong>The right file is picked for you.</strong> When a plugin publishes one file for
+        Paper and one for Velocity, the companion takes the Velocity one.</li>
+      <li><strong>No <code>hot-reload</code> and no <code>track</code></strong> on a proxy. Everything
+        else (<code>mode</code>, <code>hold-new-updates</code>, <code>require-hash</code>,
+        <code>github-token</code>, <code>jenkins-artifact</code>) works the same.</li>
+    </ul>
+
     <h2>FAQ</h2>
     <ul>
-      <li><strong>Does it work on Spigot?</strong> Yes: Paper, Spigot, and Folia.</li>
+      <li><strong>Does it work on Spigot?</strong> Yes: Paper, Spigot, and Folia. Velocity proxies
+        have their own companion, see <a href="#velocity">above</a>.</li>
       <li><strong>My plugin isn't on Modrinth/Hangar.</strong> Use <code>github: owner/repo</code>
         if its releases are on GitHub. If it's published nowhere with an API, the companion can't
         track it.</li>
