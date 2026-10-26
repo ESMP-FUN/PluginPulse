@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.10.0] - 2026-10-26
 
 ### Added
 - **Velocity support, for the library and the companion.** Plugins for Velocity proxies can shade `pluginpulse-velocity` and use the same `pluginpulse.yml`, and proxy owners get their own companion jar, run with `/pulseproxy` (or `/ppp`) so it never hides `/pluginpulse` on the servers behind it. Works on Velocity 3.4 up to 4.3. Downloaded updates are put in place when the proxy shuts down, since Velocity can't swap a running plugin.

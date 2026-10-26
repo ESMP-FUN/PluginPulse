@@ -56,7 +56,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.ESMP-FUN.PluginPulse:pluginpulse-core:v0.9.0")
+    implementation("com.github.ESMP-FUN.PluginPulse:pluginpulse-core:v0.10.0")
 }
 ```
 
@@ -254,7 +254,7 @@ jar, and loads + enables the new version. If the new version fails to load it
 rolls back to the automatic backup.
 
 ```kotlin
-implementation("com.github.ESMP-FUN.PluginPulse:pluginpulse-hotreload:v0.9.0")
+implementation("com.github.ESMP-FUN.PluginPulse:pluginpulse-hotreload:v0.10.0")
 ```
 
 ```java
@@ -283,7 +283,7 @@ Use the `pluginpulse-velocity` artifact instead of `pluginpulse-core`. It reads
 the same `pluginpulse.yml`, so the one-file quick start works unchanged:
 
 ```kotlin
-implementation("com.github.ESMP-FUN.PluginPulse:pluginpulse-velocity:v0.9.0")
+implementation("com.github.ESMP-FUN.PluginPulse:pluginpulse-velocity:v0.10.0")
 ```
 
 ```java
