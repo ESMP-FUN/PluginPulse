@@ -15,7 +15,7 @@ This guide is self-contained. If a term is unfamiliar, see the [glossary](glossa
 
 **What is JitPack?** [JitPack](https://jitpack.io) is a free service that builds a Gradle/Maven dependency directly from a GitHub tag. **You do not need a JitPack account, and you don't need to sign up for anything**. You just add its repository URL to your build file and reference the version by its Git tag. The first time anyone requests a given version, JitPack builds it (~1–2 minutes) and caches it forever after.
 
-The current version is **`v0.10.1`**. Pick your build system:
+The current version is **`v0.10.2`**. Pick your build system:
 
 ### Gradle (Kotlin DSL, `build.gradle.kts`)
 
@@ -26,7 +26,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.ESMP-FUN.PluginPulse:pluginpulse-core:v0.10.1")
+    implementation("com.github.ESMP-FUN.PluginPulse:pluginpulse-core:v0.10.2")
 }
 ```
 
@@ -39,7 +39,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.ESMP-FUN.PluginPulse:pluginpulse-core:v0.10.1'
+    implementation 'com.github.ESMP-FUN.PluginPulse:pluginpulse-core:v0.10.2'
 }
 ```
 
@@ -57,7 +57,7 @@ dependencies {
     <dependency>
         <groupId>com.github.ESMP-FUN.PluginPulse</groupId>
         <artifactId>pluginpulse-core</artifactId>
-        <version>v0.10.1</version>
+        <version>v0.10.2</version>
     </dependency>
 </dependencies>
 ```

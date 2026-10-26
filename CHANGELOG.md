@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.10.2] - 2026-10-26
 
 ### Added
 - **BuiltByBit as an update source, for checking only.** Set `builtbybit:` to the resource id and `builtbybit-token:` to your own BuiltByBit API key, best as an environment variable (`"${BBB_TOKEN}"`) since the key belongs to your account. BuiltByBit doesn't let outside tools download files, so PluginPulse tells you a new version is out and links to the resource's updates page; you download it there yourself.
