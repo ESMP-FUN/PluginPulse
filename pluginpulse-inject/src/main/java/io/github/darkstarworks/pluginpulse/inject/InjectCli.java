@@ -45,11 +45,15 @@ public final class InjectCli implements Callable<Integer> {
                 return 2;
             }
             JarInspector.Inspection insp = JarInspector.inspect(jar);
-            Descriptor d = insp.descriptor();
-            System.out.println("descriptor : " + d.kind().entry);
+            Descriptor d = insp.primary();
+            System.out.println("descriptor : " + d.kind().entry
+                    + (insp.descriptor() != null && insp.velocity() != null ? " + velocity-plugin.json" : ""));
             System.out.println("name       : " + d.name());
             System.out.println("version    : " + d.version());
             System.out.println("main       : " + d.main());
+            if (insp.descriptor() != null && insp.velocity() != null) {
+                System.out.println("velocity   : " + insp.velocity().main());
+            }
             System.out.println("final main : " + insp.finalMain());
             System.out.println("strategy   : " + insp.strategy());
             System.out.println("signed     : " + insp.signed());
@@ -116,6 +120,9 @@ public final class InjectCli implements Callable<Integer> {
                 System.out.println("  library relocated to : " + result.relocatedPackage());
                 if (result.strategy() == Strategy.WRAPPER) {
                     System.out.println("  new main             : " + result.wrapperOrMain());
+                }
+                if (result.velocityMain() != null) {
+                    System.out.println("  Velocity hook added  : " + result.velocityMain());
                 }
                 if (result.strippedSignature()) {
                     System.out.println("  WARNING: the jar was signed; the signature was stripped "

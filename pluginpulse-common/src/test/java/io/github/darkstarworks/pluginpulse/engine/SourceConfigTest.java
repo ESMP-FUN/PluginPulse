@@ -31,6 +31,13 @@ class SourceConfigTest {
     }
 
     @Test
+    void builtByBitRanksBeforeJenkins() {
+        List<String> n = names(Map.of("jenkins", "https://ci.example.com/job/x/", "builtbybit", 12345,
+                "builtbybit-token", "abc"));
+        assertEquals(List.of("builtbybit", "jenkins"), n);
+    }
+
+    @Test
     void sourceOrderWins() {
         List<String> n = names(Map.of("modrinth", "x", "hangar", "y", "source-order", List.of("hangar")));
         assertTrue(n.get(0).toLowerCase().contains("hangar"), n.toString());

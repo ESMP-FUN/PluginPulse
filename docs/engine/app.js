@@ -51,11 +51,13 @@
 
   async function loadAssets() {
     if (assets) return assets;
-    const [core, tpl] = await Promise.all([
+    const [core, tpl, velocity] = await Promise.all([
       fetch('engine/pluginpulse-core.jar').then((r) => r.arrayBuffer()),
       fetch('engine/wrapper-template.class').then((r) => r.arrayBuffer()),
+      fetch('engine/pluginpulse-velocity.jar').then((r) => r.arrayBuffer()),
     ]);
-    assets = { coreJar: new Uint8Array(core), wrapperTemplate: new Uint8Array(tpl) };
+    assets = { coreJar: new Uint8Array(core), wrapperTemplate: new Uint8Array(tpl),
+      velocityJar: new Uint8Array(velocity) };
     return assets;
   }
 
@@ -211,6 +213,7 @@
         'Plugin           : ' + (info.name || '(no name listed inside the jar)') + '\n' +
         'Version          : ' + (info.version || '(not listed)') + '\n' +
         'Author(s)        : ' + authors + '\n' +
+        'Runs on          : ' + info.platforms + '\n' +
         'Can be updated   : Yes' +
         (info.finalMain
           ? '\nNote             : this plugin needs a small adjustment first. The tool does it for you'
@@ -235,9 +238,9 @@
       if (/no plugin\.yml/i.test(err.message)) {
         toast({
           kind: 'err',
-          title: 'That doesn\'t look like a Paper/Spigot plugin',
+          title: 'That doesn\'t look like a Paper, Spigot or Velocity plugin',
           lines: [
-            'No plugin.yml or paper-plugin.yml with a main class was found inside the jar.',
+            'No plugin.yml, paper-plugin.yml or velocity-plugin.json with a main class was found inside the jar.',
             'Make sure you picked the plugin jar itself, not a library, a source archive, or a mod for a different platform.',
           ],
         });

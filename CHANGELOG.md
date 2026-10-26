@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **BuiltByBit as an update source, for checking only.** Set `builtbybit:` to the resource id and `builtbybit-token:` to your own BuiltByBit API key, best as an environment variable (`"${BBB_TOKEN}"`) since the key belongs to your account. BuiltByBit doesn't let outside tools download files, so PluginPulse tells you a new version is out and links to the resource's updates page; you download it there yourself.
+- **The browser tool and the command-line injector now handle Velocity plugins.** They add the proxy version of the updater to a Velocity plugin jar, leaving its `velocity-plugin.json` as it is, and a jar made for both Paper and Velocity gets both. Updates are installed when the proxy shuts down; nothing restarts the proxy or reloads plugins on its own.
+
+### Changed
+- **The guides now say plainly that PluginPulse never restarts or reloads anything on a Velocity proxy**, so a permissions plugin such as LuckPerms is never switched off underneath your players.
+
 ## [0.10.1] - 2026-10-26
 
 ### Fixed

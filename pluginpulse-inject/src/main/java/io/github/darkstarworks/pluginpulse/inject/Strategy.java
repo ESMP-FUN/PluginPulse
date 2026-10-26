@@ -5,5 +5,7 @@ public enum Strategy {
     /** Generate a {@code <Main>__Pulse extends <Main>} subclass and re-point {@code main:}. */
     WRAPPER,
     /** Rewrite the existing (final) main class's onEnable/onDisable in place. */
-    INSTRUMENT
+    INSTRUMENT,
+    /** Velocity only: add an injected field and an init handler to the main class in place. */
+    VELOCITY
 }

@@ -2,7 +2,7 @@
 
 PluginPulse checks one or more **sources** to learn when a new version of a plugin is out. You need at least one. This page explains how to find the right identifier for each. It's shared by all three guides.
 
-You can list more than one: one is the **primary** and the rest are **fallbacks** tried in order if the primary is unreachable. By default the order is Modrinth, then GitHub, then Hangar, then Jenkins. To choose your own order, add a `source-order` list (primary first); any source you leave out is appended after the ones you list:
+You can list more than one: one is the **primary** and the rest are **fallbacks** tried in order if the primary is unreachable. By default the order is Modrinth, then GitHub, then Hangar, then BuiltByBit, then Jenkins. To choose your own order, add a `source-order` list (primary first); any source you leave out is appended after the ones you list:
 
 ```yaml
 modrinth: my-plugin
@@ -53,6 +53,23 @@ For plugins on [hangar.papermc.io](https://hangar.papermc.io).
 hangar: My-Plugin
 ```
 
+## BuiltByBit (check only)
+
+For plugins sold or shared on [builtbybit.com](https://builtbybit.com). PluginPulse can tell you when a new version is out, but **it can't download it for you**: BuiltByBit doesn't let outside tools fetch the files. The notice links to the resource's updates page, and you download the new version there yourself.
+
+* Open the resource. The URL looks like `https://builtbybit.com/resources/my-plugin.12345/`.
+* The number at the end (`12345`) is the **resource id**: that's your BuiltByBit value.
+* BuiltByBit only answers to someone who logs in with an **API key**. Create your own at [builtbybit.com/account/api](https://builtbybit.com/account/api) and put it in `builtbybit-token`.
+
+```yaml
+builtbybit: 12345
+builtbybit-token: "${BBB_TOKEN}"   # read from the BBB_TOKEN environment variable
+```
+
+{% hint style="warning" %}
+The API key is tied to **your own BuiltByBit account**, like a password. Don't paste it into a config file that you share, upload or commit. Set it as an environment variable on the server (here called `BBB_TOKEN`) and write `"${BBB_TOKEN}"` in the config, as above. If the key is missing, PluginPulse says so in the console and skips this source.
+{% endhint %}
+
 ## Jenkins (CI snapshots)
 
 For plugins whose builds come from a **Jenkins** server, for example FastAsyncWorldEdit ([ci.athion.net/job/FastAsyncWorldEdit](https://ci.athion.net/job/FastAsyncWorldEdit/)), LuckPerms snapshots (ci.lucko.me), EssentialsX dev builds, and many others. PluginPulse follows the job's **last successful build**.
@@ -91,7 +108,7 @@ Some Jenkins servers can't be used: **ci.citizensnpcs.co** (Citizens, Denizen) b
 
 ## Self-hosted (advanced)
 
-If the plugin author publishes their own JSON manifest (for example, a paid plugin behind a licence key), that's a **custom source**; see the [developer reference](https://github.com/ESMP-FUN/PluginPulse#sources) `CustomJsonSource`. The companion plugin and web tool don't configure custom sources; use the library directly.
+If the plugin author publishes their own JSON manifest (for example, a paid plugin behind a licence key), that's a **custom source**; see the [developer reference](https://esmp-fun.gitbook.io/plugins/pluginpulse/reference/developer-reference#sources) `CustomJsonSource`. The companion plugin and web tool don't configure custom sources; use the library directly.
 
 ## Which should I pick?
 

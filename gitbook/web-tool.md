@@ -47,7 +47,8 @@ The tool adds PluginPulse to an existing plugin jar and hands you a new jar. It 
 
 * **Wrapper strategy.** If the plugin's main class is `final` (the default for Kotlin plugins), the tool clears that flag so the wrapper can subclass it, removing `final` only permits subclassing and is safe for a plugin main class. If you'd rather edit a final main in place, the command-line tool `pluginpulse-inject` uses the instrument strategy instead.
 * **It can't confirm the jar runs.** Always test before distributing.
-* **Any class-file version works,** including Java 25 / mc26 jars, and both `plugin.yml` and `paper-plugin.yml` descriptors.
+* **Any class-file version works,** including Java 25 / mc26 jars, and `plugin.yml`, `paper-plugin.yml` and `velocity-plugin.json` descriptors.
+* **Velocity plugins** get the proxy version of the updater. The tool adds two small pieces to the plugin's main class and leaves its `velocity-plugin.json` as it is. A downloaded update is installed when the proxy shuts down; the updater never restarts the proxy or reloads plugins on its own. A jar made for both Paper and Velocity gets both.
 
 ## "It said my jar can't be processed"
 
@@ -55,5 +56,5 @@ Common reasons and what to do:
 
 * **"main class is final"**: expected for some plugins; use the CLI tool (`pluginpulse-inject`), which handles this case.
 * **"already contains PluginPulse"**: it was injected before. Tick the **re-inject** box only if you mean to redo it.
-* **"No plugin.yml or paper-plugin.yml with a main:"**. The file isn't a Bukkit plugin jar (or its descriptor is missing/renamed). Double-check you selected the right file.
+* **"No plugin.yml, paper-plugin.yml or velocity-plugin.json with a main class"**. The file isn't a Paper, Spigot or Velocity plugin jar (or its descriptor is missing/renamed). Double-check you selected the right file.
 

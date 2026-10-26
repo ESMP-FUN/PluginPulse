@@ -56,7 +56,7 @@ On Spigot, notices are plain text with the link written out, instead of clickabl
     mode: notify            # tell me, download nothing[/CODE]
 The plugins you list don't need to know PluginPulse exists.
 
-More info? [URL='https://esmp-fun.github.io/PluginPulse/companion-plugin/']Read about it in the guide[/URL]
+More info? [URL='https://esmp-fun.gitbook.io/plugins/pluginpulse/guides/companion-plugin']Read about it in the guide[/URL]
 [CENTER][SIZE=3][COLOR=#808080]
 ------------------------------
 [/COLOR][/SIZE][/CENTER]
@@ -66,7 +66,7 @@ It checks Modrinth, GitHub, Hangar, a Jenkins build server, or a web address you
 Give a plugin more than one place to check, in the order you choose.
 When a plugin makes separate downloads for 1.21 and 26.x, you get the one for your server.
 
-More info? [URL='https://esmp-fun.github.io/PluginPulse/update-sources/']Read about it in the docs[/URL]
+More info? [URL='https://esmp-fun.gitbook.io/plugins/pluginpulse/reference/update-sources']Read about it in the docs[/URL]
 [/SPOILER]
 [SPOILER="Tells you"]
 A notice in the console, and in game for anyone with [ICODE]pluginpulse.admin[/ICODE].
@@ -118,7 +118,7 @@ user-agent-contact: "you@example.com"   # Modrinth asks for a way to reach you
 check-interval-hours: 6
 hold-new-updates: false          # true = wait until a release has been out a while
 hold-new-updates-hours: 18[/CODE]
-More info? [URL='https://esmp-fun.github.io/PluginPulse/companion-plugin/']Read about it in the guide[/URL]
+More info? [URL='https://esmp-fun.gitbook.io/plugins/pluginpulse/guides/companion-plugin']Read about it in the guide[/URL]
 [/SPOILER]
 [CENTER][SIZE=3][COLOR=#808080]
 ------------------------------
@@ -129,7 +129,7 @@ PluginPulse is also a library.
 Add it to your plugin and it updates itself, with the same checks, notices and backups.
 Drop a [ICODE]pluginpulse.yml[/ICODE] into your resources and call [ICODE]PluginPulse.bootstrap(this)[/ICODE], or use the builder for full control.
 
-More info? [URL='https://esmp-fun.github.io/PluginPulse/adopting-the-library/']Read about it in the library guide[/URL]
+More info? [URL='https://esmp-fun.gitbook.io/plugins/pluginpulse/guides/adopting-the-library']Read about it in the library guide[/URL]
 [/SPOILER]
 [SPOILER="Add updates to a jar you can't rebuild"]
 Have a plugin jar but no source code?
@@ -137,7 +137,7 @@ The [URL='https://esmp-fun.github.io/PluginPulse/']browser tool[/URL] adds an up
 Pick the jar, say where its updates come from, and download the new jar.
 Everything happens on the page. Your jar is never uploaded.
 
-More info? [URL='https://esmp-fun.github.io/PluginPulse/web-tool/']Read about it in the browser tool guide[/URL]
+More info? [URL='https://esmp-fun.gitbook.io/plugins/pluginpulse/guides/web-tool']Read about it in the browser tool guide[/URL]
 [/SPOILER]
 [CENTER][SIZE=3][COLOR=#808080]
 ------------------------------
@@ -150,11 +150,12 @@ The source is on [URL='https://github.com/ESMP-FUN/PluginPulse']GitHub[/URL], an
 [/COLOR][/SIZE][/CENTER]
 [SIZE=6][COLOR=#0000ff][B]Links[/B][/COLOR][/SIZE]
 [LIST]
-[*][B]Guide:[/B] [URL='https://esmp-fun.github.io/PluginPulse/companion-plugin/']companion plugin guide[/URL]
-[*][B]Where a plugin publishes its updates:[/B] [URL='https://esmp-fun.github.io/PluginPulse/update-sources/']finding your update source[/URL]
+[*][B]Guide:[/B] [URL='https://esmp-fun.gitbook.io/plugins/pluginpulse/guides/companion-plugin']companion plugin guide[/URL]
+[*][B]Where a plugin publishes its updates:[/B] [URL='https://esmp-fun.gitbook.io/plugins/pluginpulse/reference/update-sources']finding your update source[/URL]
 [*][B]Source and issues:[/B] [URL='https://github.com/ESMP-FUN/PluginPulse']github.com/ESMP-FUN/PluginPulse[/URL]
 [*][B]Changelog:[/B] [URL='https://github.com/ESMP-FUN/PluginPulse/blob/master/CHANGELOG.md']CHANGELOG.md[/URL]
-[*][B]Discord:[/B] [URL='https://discord.gg/qwYcTpHsNC']ask me directly[/URL]
+[*][B]Developer reference:[/B] [URL='https://esmp-fun.gitbook.io/plugins/pluginpulse/reference/developer-reference']esmp-fun.gitbook.io/pluginpulse/developer-reference[/URL]
+[*][B]Discord:[/B] [URL='https://discord.gg/aWMU2JNXex']ask me directly[/URL]
 [/LIST]
 [CENTER][SIZE=3][I]If PluginPulse saved you a round of jar-swapping, a positive review[/I]
 [I]on this page is the best way to support development.[/I][/SIZE][/CENTER]

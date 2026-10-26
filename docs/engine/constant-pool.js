@@ -189,7 +189,115 @@
     return serializeClass(parsed);
   }
 
-  const api = { parseClass, serializeClass, editClassUtf8, readAccessFlags, isFinal, definalize, replaceBytes };
+  /**
+   * Return a copy of a Velocity main class with two members appended, the same
+   * ones the CLI adds:
+   *
+   *   @Inject private ProxyServer pluginpulse$proxy;
+   *   @Subscribe public void pluginpulse$init(ProxyInitializeEvent e) {
+   *       VelocityPulse.bootstrap(pluginpulse$proxy, this);
+   *   }
+   *
+   * Guice fills the field and Velocity calls the handler, so the constructor
+   * and velocity-plugin.json stay untouched. The method is branch-free, so it
+   * needs no stack map frames. A class that already has the field is returned
+   * unchanged (re-injecting an upgraded jar).
+   */
+  function addVelocityHook(bytes, relocInternal) {
+    const FIELD = 'pluginpulse$proxy';
+    const parsed = parseClass(bytes);
+    const enc = new TextEncoder();
+    const dec = new TextDecoder('utf-8');
+
+    const cpByIndex = {};
+    let next = 1;
+    for (const e of parsed.entries) {
+      cpByIndex[next] = e;
+      next += (e.tag === 5 || e.tag === 6) ? 2 : 1;
+    }
+    const utf8At = (idx) => {
+      const e = cpByIndex[idx];
+      return e && e.tag === 1 ? dec.decode(e.data) : null;
+    };
+    const u2 = (v) => [(v >> 8) & 0xff, v & 0xff];
+    const u4 = (v) => [(v >>> 24) & 0xff, (v >> 16) & 0xff, (v >> 8) & 0xff, v & 0xff];
+    const add = (entry) => { parsed.entries.push(entry); return next++; };
+    const utf8 = (s) => add({ tag: 1, data: enc.encode(s) });
+    const ref = (tag, a, b) => add({ tag, raw: new Uint8Array(b === undefined ? u2(a) : [...u2(a), ...u2(b)]) });
+
+    const tail = parsed.tail;
+    const dv = new DataView(tail.buffer, tail.byteOffset, tail.byteLength);
+    const thisClass = dv.getUint16(2);
+    let o = 6;
+    o += 2 + dv.getUint16(o) * 2; // interfaces
+    const skipMembers = (onMember) => {
+      const count = dv.getUint16(o); o += 2;
+      for (let i = 0; i < count; i++) {
+        if (onMember) onMember(dv.getUint16(o + 2));
+        const attrCount = dv.getUint16(o + 6);
+        o += 8;
+        for (let a = 0; a < attrCount; a++) o += 6 + dv.getUint32(o + 2);
+      }
+    };
+    const fieldsCountAt = o;
+    let present = false;
+    skipMembers((nameIdx) => { if (utf8At(nameIdx) === FIELD) present = true; });
+    if (present) return bytes;
+    const fieldsEnd = o;
+    const methodsCountAt = o;
+    skipMembers(null);
+    const methodsEnd = o;
+
+    const proxyDesc = 'Lcom/velocitypowered/api/proxy/ProxyServer;';
+    const fieldName = utf8(FIELD);
+    const fieldDesc = utf8(proxyDesc);
+    const rva = utf8('RuntimeVisibleAnnotations');
+    const injectType = utf8('Lcom/google/inject/Inject;');
+    const subscribeType = utf8('Lcom/velocitypowered/api/event/Subscribe;');
+    const codeName = utf8('Code');
+    const methodName = utf8('pluginpulse$init');
+    const methodDesc = utf8('(Lcom/velocitypowered/api/event/proxy/ProxyInitializeEvent;)V');
+    const fieldRef = ref(9, thisClass, ref(12, fieldName, fieldDesc));
+    const pulseClass = ref(7, utf8(relocInternal + '/velocity/VelocityPulse'));
+    const bootstrap = ref(10, pulseClass, ref(12, utf8('bootstrap'),
+      utf8('(' + proxyDesc + 'Ljava/lang/Object;)L' + relocInternal + '/velocity/VelocityUpdater;')));
+
+    const annotation = (type) => [...u2(rva), ...u4(6), ...u2(1), ...u2(type), ...u2(0)];
+    const field = [...u2(0x0002), ...u2(fieldName), ...u2(fieldDesc), ...u2(1), ...annotation(injectType)];
+    const code = [
+      0x2a,                          // aload_0
+      0xb4, ...u2(fieldRef),         // getfield pluginpulse$proxy
+      0x2a,                          // aload_0
+      0xb8, ...u2(bootstrap),        // invokestatic VelocityPulse.bootstrap
+      0x57,                          // pop
+      0xb1,                          // return
+    ];
+    const method = [
+      ...u2(0x0001), ...u2(methodName), ...u2(methodDesc), ...u2(2),
+      ...u2(codeName), ...u4(12 + code.length), ...u2(2), ...u2(2), ...u4(code.length), ...code,
+      ...u2(0), ...u2(0),
+      ...annotation(subscribeType),
+    ];
+
+    const out = new Uint8Array(tail.length + field.length + method.length);
+    out.set(tail.subarray(0, fieldsEnd), 0);
+    out.set(field, fieldsEnd);
+    out.set(tail.subarray(fieldsEnd, methodsEnd), fieldsEnd + field.length);
+    out.set(method, methodsEnd + field.length);
+    out.set(tail.subarray(methodsEnd), methodsEnd + field.length + method.length);
+    const odv = new DataView(out.buffer);
+    odv.setUint16(fieldsCountAt, dv.getUint16(fieldsCountAt) + 1);
+    odv.setUint16(methodsCountAt + field.length, dv.getUint16(methodsCountAt) + 1);
+    parsed.tail = out;
+
+    const prefix = parsed.prefix.slice();
+    new DataView(prefix.buffer).setUint16(8, next); // constant_pool_count
+    parsed.prefix = prefix;
+    return serializeClass(parsed);
+  }
+
+  const api = { parseClass, serializeClass, editClassUtf8, readAccessFlags, isFinal, definalize, replaceBytes,
+    addVelocityHook };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.PPClass = api;
 })(typeof window !== 'undefined' ? window : globalThis);

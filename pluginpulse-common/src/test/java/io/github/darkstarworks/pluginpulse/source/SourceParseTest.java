@@ -300,6 +300,44 @@ class SourceParseTest {
         assertEquals("42", JenkinsSource.deriveVersion("plugin.jar", 42));
     }
 
+    // ==== BuiltByBit ====
+
+    private static final String BUILTBYBIT_JSON = """
+            {
+              "data": {
+                "version_id": 51234,
+                "update_id": 40987,
+                "name": "2.4.1",
+                "release_date": 1784539800,
+                "download_count": 318
+              }
+            }
+            """;
+
+    @Test
+    void builtByBitLatestVersion() throws Exception {
+        UpdateInfo info = BuiltByBitSource.parse(BUILTBYBIT_JSON, "12345");
+        assertEquals("2.4.1", info.version());
+        assertNull(info.downloadUrl());
+        assertTrue(info.hashes().isEmpty());
+        assertEquals("https://builtbybit.com/resources/12345/updates", info.releasePageUrl());
+        assertEquals(1784539800_000L, info.publishedEpochMs());
+    }
+
+    @Test
+    void builtByBitErrorBodyIsReported() {
+        Exception e = assertThrows(java.io.IOException.class, () -> BuiltByBitSource.parse(
+                "{\"error\":{\"code\":\"ResourceNotFoundError\","
+                        + "\"message\":\"No resource found.\"}}", "1"));
+        assertTrue(e.getMessage().contains("No resource found."));
+    }
+
+    @Test
+    void builtByBitAuthHeaderDefaultsToPrivate() {
+        assertEquals("Private abc", BuiltByBitSource.authHeader("abc"));
+        assertEquals("Shared abc", BuiltByBitSource.authHeader("Shared abc"));
+    }
+
     // ==== Custom JSON ====
 
     private static final String CUSTOM_JSON = """

@@ -230,7 +230,7 @@ public final class MyPlugin extends JavaPlugin {
 }
 ```
 
-The full builder surface (modes, sources, tracks, message customization, and the opt-in hot-reload artifact) is documented in the [developer reference](https://github.com/ESMP-FUN/PluginPulse#readme).
+The full builder surface (modes, sources, tracks, message customization, and the opt-in hot-reload artifact) is documented in the [developer reference](https://esmp-fun.gitbook.io/plugins/pluginpulse/reference/developer-reference).
 
 ### On Velocity
 

@@ -2,6 +2,7 @@ package io.github.darkstarworks.pluginpulse.engine;
 
 import io.github.darkstarworks.pluginpulse.Secrets;
 import io.github.darkstarworks.pluginpulse.UpdateMode;
+import io.github.darkstarworks.pluginpulse.source.BuiltByBitSource;
 import io.github.darkstarworks.pluginpulse.source.GitHubReleasesSource;
 import io.github.darkstarworks.pluginpulse.source.HangarSource;
 import io.github.darkstarworks.pluginpulse.source.JenkinsSource;
@@ -19,7 +20,7 @@ import java.util.logging.Logger;
 /**
  * Turns the source keys shared by {@code pluginpulse.yml} and the companion
  * configs ({@code modrinth}, {@code github}, {@code hangar}, {@code jenkins},
- * {@code source-order}, ...) into update sources for one platform.
+ * {@code builtbybit}, {@code source-order}, ...) into update sources for one platform.
  */
 public final class SourceConfig {
 
@@ -46,7 +47,8 @@ public final class SourceConfig {
     /**
      * The configured sources, primary first. The order comes from the optional
      * {@code source-order} list; anything it leaves out follows in the default
-     * order modrinth, github, hangar, jenkins (CI snapshots rank last).
+     * order modrinth, github, hangar, builtbybit, jenkins (CI snapshots rank
+     * last).
      *
      * @param who            log prefix, e.g. "PluginPulse" or the managed plugin's name
      * @param requireHashTip where to set {@code require-hash}, e.g. "in pluginpulse.yml"
@@ -58,6 +60,7 @@ public final class SourceConfig {
         String modrinth = cfg.string("modrinth");
         String github = cfg.string("github");
         String hangar = cfg.string("hangar");
+        String builtbybit = cfg.string("builtbybit");
         String jenkins = cfg.string("jenkins");
         if (modrinth != null) {
             available.put("modrinth", new ModrinthSource(modrinth, platform.modrinthLoaders(), List.of()));
@@ -72,6 +75,16 @@ public final class SourceConfig {
         }
         if (hangar != null) {
             available.put("hangar", new HangarSource(hangar, velocity ? "VELOCITY" : "PAPER"));
+        }
+        if (builtbybit != null) {
+            // The owner's own API key, best given as ${ENV_VAR}; the API refuses
+            // anonymous requests and offers no file download, so check only.
+            String token = Secrets.resolve(cfg.string("builtbybit-token"));
+            if (token == null) {
+                logger.warning(who + ": builtbybit is set but builtbybit-token is missing or its "
+                        + "environment variable is empty, so BuiltByBit can't be checked.");
+            }
+            available.put("builtbybit", new BuiltByBitSource(builtbybit, token));
         }
         if (jenkins != null) {
             available.put("jenkins", new JenkinsSource(jenkins,

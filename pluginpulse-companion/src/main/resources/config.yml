@@ -4,7 +4,7 @@
 #
 #  For each plugin you want managed, add an entry under "plugins:" below. The key
 #  must be the plugin's EXACT name as shown in /plugins. Give it ONE update source
-#  (modrinth, github, hangar, or jenkins) and a mode.
+#  (modrinth, github, hangar, builtbybit, or jenkins) and a mode.
 #
 #  After editing, run:  /pluginpulse reload
 # ─────────────────────────────────────────────────────────────────────────────
@@ -31,6 +31,16 @@ plugins:
   # HangarPlugin:
   #   hangar: project-slug          # its Hangar project slug
   #   mode: check-only              # silent: only /pluginpulse shows the result
+  #
+  # PremiumPlugin:                  # a plugin you bought on BuiltByBit
+  #   builtbybit: 12345             # the number at the end of its BuiltByBit address
+  #   builtbybit-token: "${BBB_TOKEN}"  # YOUR OWN BuiltByBit API key (make one at
+  #                                     # builtbybit.com/account/api). It works like a
+  #                                     # password, so keep it in an environment
+  #                                     # variable, as here, not in this file.
+  #   mode: notify                  # BuiltByBit doesn't allow automatic downloads:
+  #                                 # you're told about the update and get a link
+  #                                 # to download it yourself
   #
   # FastAsyncWorldEdit:             # a plugin that publishes CI snapshots on Jenkins
   #   jenkins: https://ci.athion.net/job/FastAsyncWorldEdit/   # the JOB page URL

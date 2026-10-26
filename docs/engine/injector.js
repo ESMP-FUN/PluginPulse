@@ -10,7 +10,11 @@
  *   opts   : { modrinth, github, githubToken, hangar, jenkins, jenkinsArtifact,
  *              permission, commandRoot, mode, contact, track,
  *              checkIntervalHours, holdNewUpdatesHours, hotReload, upgrade }
- *   assets : { coreJar: Uint8Array, wrapperTemplate: Uint8Array }
+ *   assets : { coreJar: Uint8Array, wrapperTemplate: Uint8Array, velocityJar: Uint8Array }
+ *
+ * A Velocity plugin (velocity-plugin.json) gets the Velocity library and two
+ * members added to its main class instead of a wrapper; a jar that ships both
+ * a Bukkit and a Velocity main gets both.
  *
  * Requires JSZip (global) and PPClass (constant-pool.js).
  */
@@ -47,9 +51,34 @@
     return null;
   }
 
+  /** The Velocity descriptor and its main class, or null. */
+  async function readVelocityDescriptor(zip) {
+    const file = zip.file('velocity-plugin.json');
+    if (!file) return null;
+    const text = dec.decode(await file.async('uint8array'));
+    let json = null;
+    try {
+      json = JSON.parse(text);
+    } catch (e) {
+      json = null;
+    }
+    const pick = (key) => {
+      if (json && typeof json[key] === 'string') return json[key];
+      const m = text.match(new RegExp('"' + key + '"\\s*:\\s*"([^"]*)"'));
+      return m ? m[1] : null;
+    };
+    const main = pick('main');
+    if (!main) return null;
+    const authors = json && Array.isArray(json.authors) ? json.authors.filter((a) => typeof a === 'string') : [];
+    return { entry: 'velocity-plugin.json', text, main, name: pick('name') || pick('id'), version: pick('version'), authors };
+  }
+
+  const NO_DESCRIPTOR = 'No plugin.yml, paper-plugin.yml or velocity-plugin.json with a main class.';
+
   function hasPluginPulse(zip) {
     return Object.keys(zip.files).some((p) =>
-      p.endsWith('/pluginpulse/PluginPulse.class') || p === CORE_INTERNAL + '/PluginPulse.class');
+      p.endsWith('/pluginpulse/PluginPulse.class') || p.endsWith('/pluginpulse/velocity/VelocityPulse.class')
+      || p === CORE_INTERNAL + '/PluginPulse.class');
   }
 
   function buildPulseYaml(o) {
@@ -131,58 +160,37 @@
     const JSZip = getJSZip();
     const zip = await JSZip.loadAsync(jarBytes);
     const desc = await readDescriptor(zip);
-    if (!desc) throw new Error('No plugin.yml or paper-plugin.yml with a main: entry.');
+    const vel = await readVelocityDescriptor(zip);
+    if (!desc && !vel) throw new Error(NO_DESCRIPTOR);
     let finalMain = false;
-    const mainEntry = zip.file(desc.main.replace(/\./g, '/') + '.class');
-    if (mainEntry) finalMain = CP.isFinal(await mainEntry.async('uint8array'));
-    const meta = parseMeta(desc.text);
+    let meta = vel ? { name: vel.name, version: vel.version, authors: vel.authors } : null;
+    if (desc) {
+      const mainEntry = zip.file(desc.main.replace(/\./g, '/') + '.class');
+      if (mainEntry) finalMain = CP.isFinal(await mainEntry.async('uint8array'));
+      meta = parseMeta(desc.text);
+    }
+    const platforms = [desc ? 'Paper/Spigot' : null, vel ? 'Velocity' : null].filter(Boolean).join(' and ');
     return {
-      descriptor: desc.entry,
-      main: desc.main,
+      descriptor: [desc && desc.entry, vel && vel.entry].filter(Boolean).join(' + '),
+      main: desc ? desc.main : vel.main,
+      velocityMain: vel ? vel.main : null,
+      platforms,
       name: meta.name,
       version: meta.version,
       authors: meta.authors,
       finalMain,
       alreadyInjected: hasPluginPulse(zip),
-      strategy: finalMain ? 'WRAPPER (clears the class final flag)' : 'WRAPPER',
+      strategy: !desc ? 'VELOCITY (adds two members to the main class)'
+        : (finalMain ? 'WRAPPER (clears the class final flag)' : 'WRAPPER') + (vel ? ' + VELOCITY' : ''),
     };
   }
 
-  async function injectJar(jarBytes, opts, assets) {
+  /** Copy the library jar into the target zip, relocated under relocInternal. */
+  async function addRelocated(zip, libJar, relocInternal, relocDotted) {
     const JSZip = getJSZip();
-    const zip = await JSZip.loadAsync(jarBytes);
-
-    const desc = await readDescriptor(zip);
-    if (!desc) throw new Error('No plugin.yml or paper-plugin.yml with a main: entry.');
-    if (!opts.modrinth && !opts.github && !opts.hangar && !opts.jenkins) {
-      throw new Error('Provide at least one update source (Modrinth, GitHub, Hangar, or Jenkins).');
-    }
-    if (hasPluginPulse(zip) && !opts.upgrade) {
-      throw new Error('This jar already contains PluginPulse. Enable "re-inject" to proceed.');
-    }
-
-    const mainInternal = desc.main.replace(/\./g, '/');
-    const mainPath = mainInternal + '.class';
-    const mainEntry = zip.file(mainPath);
-    if (mainEntry) {
-      // Kotlin compiles every class as final by default, which would stop the
-      // wrapper from subclassing the main. Clear ACC_FINAL on the class (and on
-      // the two lifecycle methods the wrapper overrides, for the rare method-final
-      // plugin). Removing final only permits subclassing, safe for a main class.
-      const mainBytes = await mainEntry.async('uint8array');
-      zip.file(mainPath, CP.definalize(mainBytes, ['onEnable', 'onDisable']));
-    }
-
-    const slash = mainInternal.lastIndexOf('/');
-    const pkgInternal = slash >= 0 ? mainInternal.slice(0, slash) : '';
-    const relocInternal = pkgInternal ? pkgInternal + '/pluginpulse' : 'pluginpulse';
-    const relocDotted = relocInternal.replace(/\//g, '.');
-
-    // 1. Relocate the core into the target's package.
-    const coreZip = await JSZip.loadAsync(assets.coreJar);
-    const corePaths = Object.keys(coreZip.files);
-    for (const path of corePaths) {
-      const f = coreZip.files[path];
+    const libZip = await JSZip.loadAsync(libJar);
+    for (const path of Object.keys(libZip.files)) {
+      const f = libZip.files[path];
       if (f.dir) continue;
       if (path.startsWith('META-INF/') || path === 'module-info.class') continue;
       let data = await f.async('uint8array');
@@ -198,17 +206,64 @@
       }
       zip.file(newPath, data);
     }
+  }
 
-    // 2. Instantiate the wrapper from the template.
-    const wrapperBytes = CP.editClassUtf8(assets.wrapperTemplate, [
-      [MAIN_PLACEHOLDER, mainInternal],
-      [PULSE_PLACEHOLDER, relocInternal],
-    ]);
-    zip.file(mainInternal + '__Pulse.class', wrapperBytes);
+  async function injectJar(jarBytes, opts, assets) {
+    const JSZip = getJSZip();
+    const zip = await JSZip.loadAsync(jarBytes);
 
-    // 3. Re-point main: to the wrapper (text edit preserves comments/formatting).
-    const newText = desc.text.replace(/^(\s*main:\s*).*$/m, (_, p1) => p1 + desc.main + '__Pulse');
-    zip.file(desc.entry, enc.encode(newText));
+    const desc = await readDescriptor(zip);
+    const vel = await readVelocityDescriptor(zip);
+    if (!desc && !vel) throw new Error(NO_DESCRIPTOR);
+    if (!opts.modrinth && !opts.github && !opts.hangar && !opts.jenkins) {
+      throw new Error('Provide at least one update source (Modrinth, GitHub, Hangar, or Jenkins).');
+    }
+    if (hasPluginPulse(zip) && !opts.upgrade) {
+      throw new Error('This jar already contains PluginPulse. Enable "re-inject" to proceed.');
+    }
+
+    const mainInternal = (desc ? desc.main : vel.main).replace(/\./g, '/');
+    const slash = mainInternal.lastIndexOf('/');
+    const pkgInternal = slash >= 0 ? mainInternal.slice(0, slash) : '';
+    const relocInternal = pkgInternal ? pkgInternal + '/pluginpulse' : 'pluginpulse';
+    const relocDotted = relocInternal.replace(/\//g, '.');
+
+    if (desc) {
+      const mainPath = mainInternal + '.class';
+      const mainEntry = zip.file(mainPath);
+      if (mainEntry) {
+        // Kotlin compiles every class as final by default, which would stop the
+        // wrapper from subclassing the main. Clear ACC_FINAL on the class (and on
+        // the two lifecycle methods the wrapper overrides, for the rare method-final
+        // plugin). Removing final only permits subclassing, safe for a main class.
+        const mainBytes = await mainEntry.async('uint8array');
+        zip.file(mainPath, CP.definalize(mainBytes, ['onEnable', 'onDisable']));
+      }
+
+      // 1. Relocate the core into the target's package.
+      await addRelocated(zip, assets.coreJar, relocInternal, relocDotted);
+
+      // 2. Instantiate the wrapper from the template.
+      const wrapperBytes = CP.editClassUtf8(assets.wrapperTemplate, [
+        [MAIN_PLACEHOLDER, mainInternal],
+        [PULSE_PLACEHOLDER, relocInternal],
+      ]);
+      zip.file(mainInternal + '__Pulse.class', wrapperBytes);
+
+      // 3. Re-point main: to the wrapper (text edit preserves comments/formatting).
+      const newText = desc.text.replace(/^(\s*main:\s*).*$/m, (_, p1) => p1 + desc.main + '__Pulse');
+      zip.file(desc.entry, enc.encode(newText));
+    }
+
+    if (vel) {
+      // Velocity: the library for proxies, and the hook on the main class.
+      // velocity-plugin.json stays as it is.
+      await addRelocated(zip, assets.velocityJar, relocInternal, relocDotted);
+      const velPath = vel.main.replace(/\./g, '/') + '.class';
+      const velEntry = zip.file(velPath);
+      if (!velEntry) throw new Error('The Velocity main class ' + vel.main + ' is missing from the jar.');
+      zip.file(velPath, CP.addVelocityHook(await velEntry.async('uint8array'), relocInternal));
+    }
 
     // 4. Add pluginpulse.yml.
     zip.file('pluginpulse.yml', enc.encode(buildPulseYaml(opts)));

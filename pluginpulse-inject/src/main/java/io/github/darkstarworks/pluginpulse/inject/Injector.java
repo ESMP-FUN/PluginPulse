@@ -8,8 +8,11 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.MatchResult;
@@ -23,17 +26,20 @@ import java.util.zip.ZipOutputStream;
 /**
  * Wires PluginPulse into a compiled plugin jar without its source:
  * relocate the library under the target's own package, add a wrapper subclass
- * (or instrument a final main in place), re-point {@code main:}, and drop in a
+ * (or instrument a final main in place) and re-point {@code main:}, add the
+ * Velocity hook when the jar is a Velocity plugin, and drop in a
  * {@code pluginpulse.yml}. The reference engine the in-browser JS is golden-tested against.
  */
 public final class Injector {
 
     private static final Pattern MAIN_LINE = Pattern.compile("(?m)^(\\s*main:\\s*).*$");
     private static final String CORE_PACKAGE = "io.github.darkstarworks.pluginpulse";
+    private static final String BUKKIT_PAYLOAD = "/payload/pluginpulse-core.jar.payload";
+    private static final String VELOCITY_PAYLOAD = "/payload/pluginpulse-velocity.jar.payload";
 
     /** What an injection did: surfaced by the CLI. */
     public record Result(Strategy strategy, String main, String wrapperOrMain,
-                         String relocatedPackage, boolean strippedSignature) {
+                         String relocatedPackage, boolean strippedSignature, String velocityMain) {
     }
 
     public Injector() {
@@ -51,56 +57,71 @@ public final class Injector {
         if (insp.alreadyInjected() && !options.upgrade()) {
             throw new IllegalStateException("Jar already contains PluginPulse; pass --upgrade to re-inject.");
         }
-        Descriptor descriptor = insp.descriptor();
-        String main = descriptor.main();
-        String mainInternal = main.replace('.', '/');
+        Descriptor primary = insp.primary();
+        String mainInternal = primary.main().replace('.', '/');
         int slash = mainInternal.lastIndexOf('/');
         String pkgInternal = slash >= 0 ? mainInternal.substring(0, slash) : "";
         String relocatedBaseInternal = pkgInternal.isEmpty() ? "pluginpulse" : pkgInternal + "/pluginpulse";
         String relocatedPackage = relocatedBaseInternal.replace('/', '.');
 
-        Path relocatedCore = relocateCore(relocatedPackage);
+        List<Path> payloads = new ArrayList<>();
         try {
-            return switch (insp.strategy()) {
-                case WRAPPER -> injectWrapper(input, output, insp, relocatedCore,
-                        relocatedBaseInternal, relocatedPackage, options);
-                case INSTRUMENT -> injectInstrument(input, output, insp, relocatedCore,
-                        relocatedBaseInternal, relocatedPackage, options);
-            };
+            if (insp.descriptor() != null) payloads.add(relocatePayload(BUKKIT_PAYLOAD, relocatedPackage));
+            if (insp.velocity() != null) payloads.add(relocatePayload(VELOCITY_PAYLOAD, relocatedPackage));
+
+            // Entries written in place of the input's own.
+            Map<String, byte[]> replaced = new LinkedHashMap<>();
+            String wrapperOrMain = primary.main();
+            if (insp.descriptor() != null) {
+                wrapperOrMain = wireBukkit(input, insp, relocatedBaseInternal, replaced);
+            }
+            Descriptor v = insp.velocity();
+            if (v != null) {
+                String entry = v.main().replace('.', '/') + ".class";
+                byte[] bytes = replaced.get(entry);
+                if (bytes == null) {
+                    try (ZipFile zip = new ZipFile(input.toFile())) {
+                        bytes = JarInspector.readClass(zip, v.main());
+                    }
+                }
+                if (bytes == null) {
+                    throw new IOException("Velocity main class " + v.main() + " is missing from the jar.");
+                }
+                try {
+                    replaced.put(entry, VelocityHook.addHook(bytes, relocatedBaseInternal));
+                } catch (RuntimeException e) {
+                    throw new IOException("Cannot add the Velocity hook to " + v.main()
+                            + " (likely an unsupported class-file version). " + e.getMessage(), e);
+                }
+            }
+            replaced.put("pluginpulse.yml", PulseYaml.build(options).getBytes(StandardCharsets.UTF_8));
+
+            Set<String> written = new HashSet<>();
+            try (ZipOutputStream out = new ZipOutputStream(Files.newOutputStream(output))) {
+                copyInput(input, out, replaced.keySet(), insp.signed(), written);
+                for (Path payload : payloads) addCoreClasses(payload, out, written);
+                for (Map.Entry<String, byte[]> e : replaced.entrySet()) put(out, e.getKey(), e.getValue(), written);
+            }
+            return new Result(insp.strategy(), primary.main(), wrapperOrMain, relocatedPackage, insp.signed(),
+                    v != null ? v.main() : null);
         } finally {
-            Files.deleteIfExists(relocatedCore);
+            for (Path payload : payloads) Files.deleteIfExists(payload);
         }
     }
 
     // ==== Strategies ====
 
-    private Result injectWrapper(Path input, Path output, JarInspector.Inspection insp, Path relocatedCore,
-                                 String relocatedBaseInternal, String relocatedPackage, InjectOptions o)
-            throws IOException {
+    /** Add the Bukkit wiring to {@code replaced}; returns the class the descriptor now points at. */
+    private String wireBukkit(Path input, JarInspector.Inspection insp, String relocatedBaseInternal,
+                              Map<String, byte[]> replaced) throws IOException {
         Descriptor d = insp.descriptor();
-        String wrapperFqn = WrapperGenerator.wrapperName(d.main());
-        byte[] wrapperBytes = WrapperGenerator.generate(d.main(), relocatedBaseInternal);
-        String newDescriptor = rewriteMain(d.rawText(), wrapperFqn);
-
-        Set<String> skip = new HashSet<>();
-        skip.add(d.entry());
-        skip.add("pluginpulse.yml");
-
-        Set<String> written = new HashSet<>();
-        try (ZipOutputStream out = new ZipOutputStream(Files.newOutputStream(output))) {
-            copyInput(input, out, skip, insp.signed(), written);
-            addCoreClasses(relocatedCore, out, written);
-            put(out, wrapperFqn.replace('.', '/') + ".class", wrapperBytes, written);
-            put(out, d.entry(), newDescriptor.getBytes(StandardCharsets.UTF_8), written);
-            put(out, "pluginpulse.yml", PulseYaml.build(o).getBytes(StandardCharsets.UTF_8), written);
+        if (insp.strategy() == Strategy.WRAPPER) {
+            String wrapperFqn = WrapperGenerator.wrapperName(d.main());
+            replaced.put(wrapperFqn.replace('.', '/') + ".class",
+                    WrapperGenerator.generate(d.main(), relocatedBaseInternal));
+            replaced.put(d.entry(), rewriteMain(d.rawText(), wrapperFqn).getBytes(StandardCharsets.UTF_8));
+            return wrapperFqn;
         }
-        return new Result(Strategy.WRAPPER, d.main(), wrapperFqn, relocatedPackage, insp.signed());
-    }
-
-    private Result injectInstrument(Path input, Path output, JarInspector.Inspection insp, Path relocatedCore,
-                                    String relocatedBaseInternal, String relocatedPackage, InjectOptions o)
-            throws IOException {
-        Descriptor d = insp.descriptor();
         String mainEntry = d.main().replace('.', '/') + ".class";
         byte[] mainBytes;
         try (ZipFile zip = new ZipFile(input.toFile())) {
@@ -109,28 +130,15 @@ public final class Injector {
         if (mainBytes == null) {
             throw new IOException("Final main class " + d.main() + " could not be read for instrumentation.");
         }
-        byte[] instrumented;
         try {
-            instrumented = Instrumenter.instrument(mainBytes, relocatedBaseInternal);
+            // main: is unchanged for INSTRUMENT: the descriptor is copied verbatim.
+            replaced.put(mainEntry, Instrumenter.instrument(mainBytes, relocatedBaseInternal));
         } catch (RuntimeException e) {
             throw new IOException("Cannot instrument final main " + d.main()
                     + " (likely an unsupported class-file version); no wrapper fallback is possible "
                     + "for a final class. " + e.getMessage(), e);
         }
-
-        Set<String> skip = new HashSet<>();
-        skip.add(mainEntry);
-        skip.add("pluginpulse.yml");
-
-        Set<String> written = new HashSet<>();
-        try (ZipOutputStream out = new ZipOutputStream(Files.newOutputStream(output))) {
-            copyInput(input, out, skip, insp.signed(), written);
-            addCoreClasses(relocatedCore, out, written);
-            put(out, mainEntry, instrumented, written);
-            put(out, "pluginpulse.yml", PulseYaml.build(o).getBytes(StandardCharsets.UTF_8), written);
-            // main: is unchanged for INSTRUMENT: descriptor copied verbatim above.
-        }
-        return new Result(Strategy.INSTRUMENT, d.main(), d.main(), relocatedPackage, insp.signed());
+        return d.main();
     }
 
     // ==== Zip plumbing ====
@@ -182,8 +190,8 @@ public final class Injector {
 
     // ==== Relocation ====
 
-    private Path relocateCore(String relocatedPackage) throws IOException {
-        Path payload = extractPayload();
+    private Path relocatePayload(String resource, String relocatedPackage) throws IOException {
+        Path payload = extractPayload(resource);
         Path relocated = Files.createTempFile("pp-core-reloc", ".jar");
         try {
             List<Relocation> rules = List.of(new Relocation(CORE_PACKAGE, relocatedPackage));
@@ -194,12 +202,12 @@ public final class Injector {
         return relocated;
     }
 
-    /** The bundled pluginpulse-core jar, extracted to a temp file for jar-relocator. */
-    private Path extractPayload() throws IOException {
+    /** A bundled library jar, extracted to a temp file for jar-relocator. */
+    private Path extractPayload(String resource) throws IOException {
         Path tmp = Files.createTempFile("pp-core", ".jar");
-        try (InputStream in = Injector.class.getResourceAsStream("/payload/pluginpulse-core.jar.payload")) {
+        try (InputStream in = Injector.class.getResourceAsStream(resource)) {
             if (in == null) {
-                throw new IOException("Bundled pluginpulse-core payload missing from the tool jar.");
+                throw new IOException("Bundled payload " + resource + " missing from the tool jar.");
             }
             Files.copy(in, tmp, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
         }

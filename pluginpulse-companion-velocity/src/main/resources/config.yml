@@ -32,7 +32,8 @@ check-interval-hours: 6
 #
 # Add one entry per plugin under "plugins:". The name on the left is the
 # plugin's id or name as shown by /velocity plugins. Give each one the place
-# its updates are published (modrinth, github, hangar or jenkins) and a mode.
+# its updates are published (modrinth, github, hangar, builtbybit or jenkins)
+# and a mode.
 #
 # What "mode" means:
 #   off         : leave this plugin alone
@@ -68,6 +69,16 @@ plugins:
   #   anotherplugin:
   #     hangar: project-name         # its Hangar project name
   #     mode: check-only
+  #
+  #   premiumplugin:
+  #     builtbybit: 12345            # the number at the end of its BuiltByBit address
+  #     builtbybit-token: "${BBB_TOKEN}"  # YOUR OWN BuiltByBit API key (make one at
+  #                                       # builtbybit.com/account/api). It works like
+  #                                       # a password, so keep it in an environment
+  #                                       # variable, as here, not in this file.
+  #     mode: notify                 # BuiltByBit doesn't allow automatic downloads:
+  #                                  # you're told about the update and get a link
+  #                                  # to download it yourself
   #
   #   snapshotplugin:
   #     jenkins: https://ci.example.com/job/SnapshotPlugin/  # the job page

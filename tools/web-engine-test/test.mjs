@@ -129,8 +129,56 @@ async function main() {
   ok(!pulseYml.includes('require-hash'), 'non-Jenkins config does not touch require-hash');
   ok(!jYml.includes('hold-new-updates'), 'settle-in wait is left out when the box is unticked');
 
+  await velocityCases(assets);
+
   console.log(failures === 0 ? '\nALL PASSED' : '\n' + failures + ' FAILED');
   process.exit(failures === 0 ? 0 : 1);
+}
+
+/**
+ * Velocity: the main class gets the hook in place, velocity-plugin.json is left
+ * alone, and the proxy library rides along. Uses the injector test fixture as a
+ * real compiled main class, so run the Java tests first. Pass an output path to
+ * keep the generated jar for a JVM load check.
+ */
+async function velocityCases(assets) {
+  const fixture = resolve(here, '../../pluginpulse-inject/build/classes/java/test/'
+    + 'io/github/darkstarworks/pluginpulse/inject/fixture/SampleVelocityPlugin.class');
+  const mainInternal = 'io/github/darkstarworks/pluginpulse/inject/fixture/SampleVelocityPlugin';
+  const json = '{"id":"sample","name":"Sample","version":"1.0.0","main":"' + mainInternal.replace(/\//g, '.') + '"}';
+  const zip = new JSZip();
+  zip.file(mainInternal + '.class', readFileSync(fixture));
+  zip.file('velocity-plugin.json', json);
+  const jar = await zip.generateAsync({ type: 'uint8array' });
+  const velAssets = { ...assets, velocityJar: new Uint8Array(readFileSync(resolve(engine, 'pluginpulse-velocity.jar'))) };
+
+  const info = await PPI.inspectJar(jar);
+  ok(info.platforms === 'Velocity', 'preview reports a Velocity plugin');
+  ok(info.name === 'Sample' && info.version === '1.0.0', 'preview reads name and version from velocity-plugin.json');
+
+  const out = await PPI.injectJar(jar, { modrinth: 'demo-slug', mode: 'notify', contact: 'me@example.com' }, velAssets);
+  const outZip = await JSZip.loadAsync(out);
+  const names = Object.keys(outZip.files);
+  const reloc = 'io/github/darkstarworks/pluginpulse/inject/fixture/pluginpulse';
+  ok(await outZip.file('velocity-plugin.json').async('string') === json, 'velocity-plugin.json left as it was');
+  ok(names.includes(reloc + '/velocity/VelocityPulse.class'), 'Velocity library relocated under the target package');
+  ok(!names.includes(reloc + '/PluginPulse.class'), 'no Paper library in a Velocity-only jar');
+  ok(!names.some((n) => n.endsWith('__Pulse.class')), 'no wrapper class for Velocity');
+
+  const hooked = await outZip.file(mainInternal + '.class').async('uint8array');
+  const hs = utf8Strings(hooked);
+  ok(hs.includes('pluginpulse$proxy') && hs.includes('pluginpulse$init'), 'main class gains the field and handler');
+  ok(hs.includes(reloc + '/velocity/VelocityPulse'), 'handler calls the relocated VelocityPulse');
+  ok(hs.includes('Lcom/google/inject/Inject;') && hs.includes('Lcom/velocitypowered/api/event/Subscribe;'),
+    'field and handler carry @Inject and @Subscribe');
+  const again = CP.addVelocityHook(hooked, reloc);
+  ok(again.length === hooked.length, 're-injecting does not add the hook twice');
+
+  const keep = process.argv[2];
+  if (keep) {
+    (await import('node:fs')).writeFileSync(keep, out);
+    console.log('  kept Velocity output at ' + keep);
+  }
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

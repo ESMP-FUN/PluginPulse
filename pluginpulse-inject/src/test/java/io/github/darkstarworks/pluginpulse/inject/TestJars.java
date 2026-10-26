@@ -35,6 +35,35 @@ final class TestJars {
         return build(dir, main, "paper-plugin.yml", yml);
     }
 
+    /** Build a jar containing the given main class plus a velocity-plugin.json. */
+    static Path velocityPluginJar(Path dir, Class<?> main, String json) throws IOException {
+        return build(dir, main, "velocity-plugin.json", json);
+    }
+
+    static String velocityJson(Class<?> main) {
+        return "{\"id\":\"sample\",\"name\":\"Sample\",\"version\":\"1.0.0\",\"main\":\"" + main.getName() + "\"}";
+    }
+
+    /** A jar shipping both a Bukkit and a Velocity main, like multi-platform plugins do. */
+    static Path dualPluginJar(Path dir, Class<?> bukkitMain, Class<?> velocityMain) throws IOException {
+        Path jar = dir.resolve("input-dual.jar");
+        try (ZipOutputStream out = new ZipOutputStream(Files.newOutputStream(jar))) {
+            for (Class<?> c : new Class<?>[]{bukkitMain, velocityMain}) {
+                out.putNextEntry(new ZipEntry(c.getName().replace('.', '/') + ".class"));
+                out.write(classBytes(c));
+                out.closeEntry();
+            }
+            out.putNextEntry(new ZipEntry("plugin.yml"));
+            out.write(("name: Sample\nversion: '1.0.0'\nmain: " + bukkitMain.getName() + "\n")
+                    .getBytes(StandardCharsets.UTF_8));
+            out.closeEntry();
+            out.putNextEntry(new ZipEntry("velocity-plugin.json"));
+            out.write(velocityJson(velocityMain).getBytes(StandardCharsets.UTF_8));
+            out.closeEntry();
+        }
+        return jar;
+    }
+
     private static Path build(Path dir, Class<?> main, String descriptorName, String descriptor) throws IOException {
         Path jar = dir.resolve("input-" + main.getSimpleName() + ".jar");
         try (ZipOutputStream out = new ZipOutputStream(Files.newOutputStream(jar))) {

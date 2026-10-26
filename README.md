@@ -6,13 +6,13 @@ Keep Minecraft server plugins up to date, three ways, depending on who you are.
 
 | You... | Use | Guide |
 |---|---|---|
-| **build your own plugin** and want it to self-update | shade the library | **[Adopting the library](https://esmp-fun.github.io/PluginPulse/adopting-the-library/)** |
-| **run a server** and just want your installed plugins updated | the companion plugin | **[Companion plugin](https://esmp-fun.github.io/PluginPulse/companion-plugin/)** |
-| **have a jar** you can't or won't rebuild | the browser tool | **[Web tool](https://esmp-fun.github.io/PluginPulse/web-tool/)** |
+| **build your own plugin** and want it to self-update | shade the library | **[Adopting the library](https://esmp-fun.gitbook.io/plugins/pluginpulse/guides/adopting-the-library)** |
+| **run a server** and just want your installed plugins updated | the companion plugin | **[Companion plugin](https://esmp-fun.gitbook.io/plugins/pluginpulse/guides/companion-plugin)** |
+| **have a jar** you can't or won't rebuild | the browser tool | **[Web tool](https://esmp-fun.gitbook.io/plugins/pluginpulse/guides/web-tool)** |
 
 Each guide stands alone and assumes no prior knowledge. Follow only *yours*.
-New to a term? See the **[glossary](https://esmp-fun.github.io/PluginPulse/glossary/)**. Not sure where your
-plugin's updates live? See **[finding your update source](https://esmp-fun.github.io/PluginPulse/update-sources/)**.
+New to a term? See the **[glossary](https://esmp-fun.gitbook.io/plugins/pluginpulse/reference/glossary)**. Not sure where your
+plugin's updates live? See **[finding your update source](https://esmp-fun.gitbook.io/plugins/pluginpulse/reference/update-sources)**.
 
 Everything below is the **developer reference** for the library (Path 1). Server
 owners and jar-only users should follow their guide above instead.
@@ -24,7 +24,8 @@ Velocity** plugins. Shade it in, point it at where you publish releases, and you
 gains:
 
 - **Multi-source update checking**: Modrinth, GitHub Releases, Hangar, Jenkins
-  CI, or any self-hosted JSON manifest, with ordered fallbacks.
+  CI, BuiltByBit (check only), or any self-hosted JSON manifest, with ordered
+  fallbacks.
 - **Clickable admin notifications**: MiniMessage console + in-game notices on
   login, permission-gated, fully re-brandable.
 - **Version intelligence**: semver-ish comparison, pre-release awareness
@@ -82,6 +83,8 @@ github: me/my-plugin             # GitHub "owner/repo" for Releases (optional)
 hangar: my-project               # Hangar project slug (optional)
 # jenkins: https://ci.example.org/job/MyPlugin/   # Jenkins job URL (optional)
 # jenkins-artifact: "Paper"      # optional regex: which jar when a build ships several
+# builtbybit: 12345              # BuiltByBit resource id, check only (optional)
+# builtbybit-token: "${BBB_TOKEN}"   # your BuiltByBit API key, needed with builtbybit
 
 permission: myplugin.admin       # who sees notices / can run /myplugin update
 command-root: /myplugin          # enables clickable buttons; self-registered if free
@@ -209,6 +212,7 @@ on the next boot; if it didn't, the plugin warns instead of re-staging forever.
 | GitHub Releases | `new GitHubReleasesSource("owner/repo")` | `digest` field or `.sha256` sidecar asset | 60 req/hr unauthenticated, keep intervals long; optional token |
 | Hangar | `new HangarSource("slug")` | sha256 | platform selectable (`PAPER`/`VELOCITY`/`WATERFALL`) |
 | Jenkins | `new JenkinsSource("https://ci.example.org/job/X/")` | none: download modes need `require-hash: false` | last successful build; optional artifact-name filter |
+| BuiltByBit | `new BuiltByBitSource("12345", token)` | none: check only | the API offers no file download, so updates are announced with a link to the resource's updates page; needs the owner's own API key, best passed as `${ENV_VAR}` |
 | Custom JSON | `new CustomJsonSource(url, headers)` | any | self-hosted manifest; headers carry auth (e.g. licence keys) |
 
 ### Custom manifest format

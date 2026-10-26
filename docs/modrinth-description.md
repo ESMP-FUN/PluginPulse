@@ -6,7 +6,7 @@
 Most servers find out a plugin is outdated the hard way, <br>
 from a crash, a security warning, or a player telling them.
 
-[![Discord](https://img.shields.io/badge/join_-_Discord-gray?style=flat&logo=discord&logoSize=amd)](https://discord.gg/qwYcTpHsNC)
+[![Discord](https://img.shields.io/badge/join_-_Discord-gray?style=flat&logo=discord&logoSize=amd)](https://discord.gg/aWMU2JNXex)
 [![Ko-Fi](https://img.shields.io/badge/support_-_KoFi-gray?style=flat&logo=kofi&logoSize=amd)](https://ko-fi.com/darkstarworks)
 
 PluginPulse checks where your plugins publish their updates, <br>
@@ -139,7 +139,7 @@ hold-new-updates: false          # true = wait until a release has been out a wh
 hold-new-updates-hours: 18
 ```
 
-More info? [Read about it in the guide](https://esmp-fun.github.io/PluginPulse/companion-plugin/)
+More info? [Read about it in the guide](https://esmp-fun.gitbook.io/plugins/pluginpulse/guides/companion-plugin)
 
 </details>
 
@@ -159,7 +159,7 @@ tasks.shadowJar {
 
 Then either drop a `pluginpulse.yml` into your resources and call `PluginPulse.bootstrap(this)`, or use the builder for full control.
 
-More info? [Read about it in the library guide](https://esmp-fun.github.io/PluginPulse/adopting-the-library/)
+More info? [Read about it in the library guide](https://esmp-fun.gitbook.io/plugins/pluginpulse/guides/adopting-the-library)
 
 </details>
 
@@ -170,7 +170,7 @@ Have a plugin jar but no source code? The [browser tool](https://esmp-fun.github
 
 Everything happens on the page. Your jar is never uploaded.
 
-More info? [Read about it in the browser tool guide](https://esmp-fun.github.io/PluginPulse/web-tool/)
+More info? [Read about it in the browser tool guide](https://esmp-fun.gitbook.io/plugins/pluginpulse/guides/web-tool)
 
 </details>
 
@@ -178,8 +178,8 @@ More info? [Read about it in the browser tool guide](https://esmp-fun.github.io/
 
 ## Help
 
-- **[Discord](https://discord.gg/qwYcTpHsNC)** - ask me directly. Tell me "if it did X, I'd use it" and there's a good chance it ships
-- **[Guide](https://esmp-fun.github.io/PluginPulse/companion-plugin/)** - setup, plus [where to find a plugin's updates](https://esmp-fun.github.io/PluginPulse/update-sources/) and a [glossary](https://esmp-fun.github.io/PluginPulse/glossary/)
+- **[Discord](https://discord.gg/aWMU2JNXex)** - ask me directly. Tell me "if it did X, I'd use it" and there's a good chance it ships
+- **[Guide](https://esmp-fun.gitbook.io/plugins/pluginpulse/guides/companion-plugin)** - setup, plus [where to find a plugin's updates](https://esmp-fun.gitbook.io/plugins/pluginpulse/reference/update-sources) and a [glossary](https://esmp-fun.gitbook.io/plugins/pluginpulse/reference/glossary)
 - **[Bug reports](https://github.com/ESMP-FUN/PluginPulse/issues)**, **[Source](https://github.com/ESMP-FUN/PluginPulse)**, **[Changelog](https://github.com/ESMP-FUN/PluginPulse/blob/master/CHANGELOG.md)**
 
 <center>

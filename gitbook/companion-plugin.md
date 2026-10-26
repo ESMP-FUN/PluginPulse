@@ -113,6 +113,7 @@ What is different on a proxy:
 * **The command is `/pulseproxy`** (alias `/ppp`), with the same actions: `list`, `check`, `download`, `restore` and `reload`. It has its own name so that `/pluginpulse` still reaches the companion on the servers behind the proxy.
 * **The name on the left** of each entry is the plugin's id or name as shown by `/velocity plugins`, for example `luckperms`.
 * **Updates are installed when the proxy shuts down.** Velocity can't swap a plugin while it runs, so a downloaded update waits until you stop or restart the proxy, then it is put in place and runs from the next start. Restarting the proxy is enough.
+* **It never restarts or reloads anything on its own.** PluginPulse doesn't restart the proxy and doesn't reload plugins while it runs, so your permissions plugin (such as LuckPerms) is never switched off underneath your players. You choose when the proxy restarts.
 * **On Windows** the running jar is locked, so putting the update in place can fail. The console then tells you which file to move where, with the proxy stopped.
 * **Permissions:** Velocity has no "op", so give `pluginpulse.admin` to your staff with a permissions plugin such as LuckPerms. The proxy console can always use `/pulseproxy`.
 * **The right file is picked for you.** When a plugin publishes one file for Paper and one for Velocity, the companion takes the Velocity one.

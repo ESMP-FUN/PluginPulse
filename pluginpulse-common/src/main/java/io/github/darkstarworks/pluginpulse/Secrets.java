@@ -1,7 +1,7 @@
 package io.github.darkstarworks.pluginpulse;
 
 /**
- * Resolves a configured secret value (currently the GitHub token) that may be
+ * Resolves a configured secret value (the GitHub or BuiltByBit token) that may be
  * supplied either literally or as an environment-variable reference.
  *
  * <p>A value of the form <code>${NAME}</code> is read from the environment
