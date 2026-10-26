@@ -25,7 +25,19 @@ public final class SourceConfig {
 
     /** Which kind of server the sources should pick downloads for. */
     public enum Platform {
-        BUKKIT, VELOCITY
+        BUKKIT(List.of("bukkit", "spigot", "paper", "purpur", "folia")),
+        VELOCITY(List.of("velocity"));
+
+        private final List<String> modrinthLoaders;
+
+        Platform(List<String> modrinthLoaders) {
+            this.modrinthLoaders = modrinthLoaders;
+        }
+
+        /** The Modrinth loader tags a server of this kind can run. */
+        public List<String> modrinthLoaders() {
+            return modrinthLoaders;
+        }
     }
 
     private SourceConfig() {
@@ -48,9 +60,7 @@ public final class SourceConfig {
         String hangar = cfg.string("hangar");
         String jenkins = cfg.string("jenkins");
         if (modrinth != null) {
-            available.put("modrinth", velocity
-                    ? new ModrinthSource(modrinth, List.of("velocity"), List.of())
-                    : new ModrinthSource(modrinth));
+            available.put("modrinth", new ModrinthSource(modrinth, platform.modrinthLoaders(), List.of()));
         }
         if (github != null) {
             // Optional token for a PRIVATE GitHub repo, literal or ${ENV_VAR}; it

@@ -2,6 +2,7 @@ package io.github.darkstarworks.pluginpulse;
 
 import io.github.darkstarworks.pluginpulse.download.PluginJarLocator;
 import io.github.darkstarworks.pluginpulse.engine.EngineSettings;
+import io.github.darkstarworks.pluginpulse.engine.SourceConfig;
 import io.github.darkstarworks.pluginpulse.engine.UpdateEngine;
 import io.github.darkstarworks.pluginpulse.notify.JoinNotifyListener;
 import io.github.darkstarworks.pluginpulse.notify.UpdateNotifier;
@@ -288,6 +289,11 @@ public final class Updater {
         @Override
         protected void noticeStagedConsole(UpdateInfo info, boolean canReload) {
             notifier.notifyStagedConsole(plugin.getName(), info, canReload);
+        }
+
+        @Override
+        protected SourceConfig.Platform platform() {
+            return SourceConfig.Platform.BUKKIT;
         }
 
         @Override

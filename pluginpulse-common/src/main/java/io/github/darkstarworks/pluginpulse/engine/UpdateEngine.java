@@ -124,6 +124,9 @@ public abstract class UpdateEngine<S> {
 
     protected abstract void noticeStagedConsole(UpdateInfo info, boolean canReload);
 
+    /** What this server runs, so sources skip downloads made for other platforms. */
+    protected abstract SourceConfig.Platform platform();
+
     /** "restart the server" or "restart the proxy", lower case. */
     protected abstract String restartPhrase();
 
@@ -323,7 +326,7 @@ public abstract class UpdateEngine<S> {
 
     private UpdateCheckResult doCheck() {
         Exception lastError = null;
-        SourceContext ctx = new SourceContext(http, track, logger(), serverVersion);
+        SourceContext ctx = new SourceContext(http, track, logger(), serverVersion, platform().modrinthLoaders());
         for (UpdateSource source : sources) {
             if (stopped) break;
             try {

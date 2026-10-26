@@ -32,7 +32,8 @@ public final class ModrinthSource implements UpdateSource {
     }
 
     /**
-     * @param loaders      optional loader filter, e.g. {@code ["paper"]}
+     * @param loaders      optional loader filter, e.g. {@code ["paper"]}; empty
+     *                     means the loaders of the platform it runs on
      * @param gameVersions optional game-version filter, e.g. {@code ["1.21.1"]}
      */
     public ModrinthSource(String projectSlug, List<String> loaders, List<String> gameVersions) {
@@ -41,19 +42,27 @@ public final class ModrinthSource implements UpdateSource {
         this.gameVersions = List.copyOf(gameVersions);
     }
 
-    @Override
-    public UpdateInfo fetchLatest(SourceContext ctx) throws Exception {
+    /** The version-list request, filtered by loader and game version. */
+    String versionsUrl(SourceContext ctx) {
         StringBuilder url = new StringBuilder(API)
                 .append("/project/").append(projectSlug).append("/version");
         String sep = "?";
-        if (!loaders.isEmpty()) {
-            url.append(sep).append("loaders=").append(encodeJsonList(loaders));
+        // Without a filter the newest version can be a Fabric or NeoForge jar
+        // of the same project, so fall back to what this server can run.
+        List<String> wanted = !loaders.isEmpty() ? loaders : ctx.loaders();
+        if (!wanted.isEmpty()) {
+            url.append(sep).append("loaders=").append(encodeJsonList(wanted));
             sep = "&";
         }
         if (!gameVersions.isEmpty()) {
             url.append(sep).append("game_versions=").append(encodeJsonList(gameVersions));
         }
-        String json = ctx.http().get(url.toString());
+        return url.toString();
+    }
+
+    @Override
+    public UpdateInfo fetchLatest(SourceContext ctx) throws Exception {
+        String json = ctx.http().get(versionsUrl(ctx));
         UpdateInfo info = parse(json, ctx.track(), projectSlug, ctx.serverVersion());
         if (info == null) {
             throw new IllegalStateException("Modrinth project " + projectSlug + " has no matching versions"

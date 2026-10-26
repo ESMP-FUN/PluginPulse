@@ -15,6 +15,7 @@ import io.github.darkstarworks.pluginpulse.UpdateCheckResult;
 import io.github.darkstarworks.pluginpulse.UpdateInfo;
 import io.github.darkstarworks.pluginpulse.UpdateMode;
 import io.github.darkstarworks.pluginpulse.engine.EngineSettings;
+import io.github.darkstarworks.pluginpulse.engine.SourceConfig;
 import io.github.darkstarworks.pluginpulse.engine.UpdateEngine;
 import io.github.darkstarworks.pluginpulse.notify.NoticeTemplates;
 import io.github.darkstarworks.pluginpulse.source.UpdateSource;
@@ -371,6 +372,11 @@ public final class VelocityUpdater {
         @Override
         protected void noticeStagedConsole(UpdateInfo info, boolean canReload) {
             noticeStaged(console(), info, canReload);
+        }
+
+        @Override
+        protected SourceConfig.Platform platform() {
+            return SourceConfig.Platform.VELOCITY;
         }
 
         @Override
