@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.10.1] - 2026-10-26
 
 ### Fixed
 - **Paper and Spigot servers no longer get offered a Fabric, NeoForge or Velocity file from Modrinth.** When a project publishes one version per platform, the newest one could be for another platform (LuckPerms' newest is a NeoForge build). PluginPulse now asks Modrinth only for files this server can run: Paper, Spigot, Bukkit, Purpur or Folia on a server, Velocity on a proxy. A source with its own loader list keeps it.
