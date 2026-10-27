@@ -14,6 +14,8 @@ dependencies {
     implementation("info.picocli:picocli:4.7.7")
     // Velocity fixtures, and loading an injected Velocity main with Guice.
     testImplementation("com.velocitypowered:velocity-api:${rootProject.extra["velocityApiVersion"]}")
+    // CarryOver runs on jars this module injects.
+    testImplementation(project(":pluginpulse-common"))
 }
 
 tasks.shadowJar {

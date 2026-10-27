@@ -45,6 +45,7 @@ The tool adds PluginPulse to an existing plugin jar and hands you a new jar. It 
 
 ## Limits (read these)
 
+* **Updates keep the updater.** The update PluginPulse installs is the author's own jar, which has no PluginPulse in it, so before installing it PluginPulse adds itself to the new jar, with the same settings. Your plugin keeps checking for updates, release after release. Two cases where it can't, and the console says so: the author moved the plugin's main class, or the jar was made with the command-line tool from a plugin whose main class is `final`. Run the new jar through this tool again then.
 * **Wrapper strategy.** If the plugin's main class is `final` (the default for Kotlin plugins), the tool clears that flag so the wrapper can subclass it, removing `final` only permits subclassing and is safe for a plugin main class. If you'd rather edit a final main in place, the command-line tool `pluginpulse-inject` uses the instrument strategy instead.
 * **It can't confirm the jar runs.** Always test before distributing.
 * **Any class-file version works,** including Java 25 / mc26 jars, and `plugin.yml`, `paper-plugin.yml` and `velocity-plugin.json` descriptors.

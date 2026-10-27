@@ -89,6 +89,14 @@ public final class DownloadPipeline {
                 case VERIFIED -> logger.info("Checksum verified for " + fileName);
             }
 
+            try {
+                CarryOver.apply(tmp, currentJar, logger);
+            } catch (IOException | RuntimeException e) {
+                logger.warning("The update is installed, but PluginPulse could not stay in it, so update checks "
+                        + "stop after this version. Run the new jar through the PluginPulse web tool again. ("
+                        + e.getMessage() + ")");
+            }
+
             Path backup = backupManager.backup(currentJar, currentVersion);
 
             Files.createDirectories(updateFolder);
