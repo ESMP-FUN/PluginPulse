@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.10.3] - 2026-10-27
 
 ### Fixed
 - **Plugins set up with the browser tool or the injector keep checking for updates after an update.** The update is the author's own jar, which has no PluginPulse in it, so the updater used to disappear after the first one. PluginPulse now adds itself to the new jar, with the same settings, before installing it. If that isn't possible (the author moved the main class, or the command-line tool changed a `final` main class in place), the console says so.
