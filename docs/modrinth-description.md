@@ -72,7 +72,7 @@ The plugins you list don't need to know PluginPulse exists.
 |---|---|
 | **Server software** | Paper, Folia, Spigot, or a Paper fork like Purpur |
 | **Proxy** | Velocity 3.4 to 4.3, with the download that has `velocity` in its name |
-| **Minecraft** | 1.20.5 to 1.21.x with the plain download, 26.x (including 26.3) with the `-mc26` download |
+| **Minecraft** | 1.20.5 to 1.21.x and 26.x (including 26.3), all with the same download |
 | **Java** | 21+ for 1.21.x, 25+ for 26.x |
 | **Anything else** | Nothing. No dependencies |
 

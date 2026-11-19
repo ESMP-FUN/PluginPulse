@@ -5,17 +5,18 @@ plugins {
     `maven-publish`
 }
 
-// Build variant: default (Minecraft 1.21.x, JDK 21) or MC 26.x, selected with
-// -PmcVariant=26. The mc26 jar still targets Java 21 bytecode for maximum server
-// compatibility; the newer JDK is only needed to read the Paper 26 API stubs
-// (class version 69) at compile time. The plugin.yml api-version is switched per
-// variant in pluginpulse-companion (26.1 vs 1.20).
-//   ./gradlew :pluginpulse-companion:shadowJar                 -> ...-<version>.jar
-//   ./gradlew :pluginpulse-companion:shadowJar -PmcVariant=26  -> ...-<version>-mc26.jar
-val mcVariant: String = (findProperty("mcVariant") as String? ?: "1.21")
-val isMc26: Boolean = mcVariant == "26"
-val paperApiVersion: String = if (isMc26) "26.1.2.build.+" else "1.21.1-R0.1-SNAPSHOT"
-val jdkVersion: Int = if (isMc26) 25 else 21
+// One build for every supported Minecraft version. The library and the companion
+// are compiled against the oldest Paper API they support (1.21.1) on JDK 21;
+// everything version-sensitive is found by reflection at runtime and fails soft.
+//
+// ./gradlew build -PcheckApi=26.3.build.249-stable compiles the Paper-side
+// modules against another Paper API instead (on JDK 25, which Paper 26 needs),
+// to see whether a new Minecraft version breaks anything. Such a build is only
+// for that check, never for release.
+// TODO(26.4): no Paper 26.4 API is published yet. Run the -PcheckApi build against it once it is.
+val checkApi = findProperty("checkApi") as String?
+val paperApiVersion: String = checkApi ?: "1.21.1-R0.1-SNAPSHOT"
+val jdkVersion: Int = if (checkApi != null && !checkApi.startsWith("1.")) 25 else 21
 
 // Built against the oldest Velocity API still in use (3.4, Java 21). The same
 // calls exist unchanged up to 4.3, so one jar covers every current proxy.
@@ -28,7 +29,7 @@ extra["velocityApiVersion"] = velocityApiVersion
 
 allprojects {
     group = "io.github.darkstarworks"
-    version = "0.10.3"
+    version = "0.11.0"
 }
 
 subprojects {
@@ -65,11 +66,9 @@ subprojects {
         testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     }
 
-    // Paper 26 API stubs are class-version 69 and advertise "JVM 25 only", but we
-    // deliberately keep bytecode at Java 21 (options.release = 21), which makes
-    // Gradle 9 tag these classpaths as JVM-21 and refuse the dependency. Accept
-    // the JVM-25 variant explicitly on the mc26 build.
-    if (isMc26) {
+    // Paper 26 publishes Java 25 jars only; the bytecode stays Java 21, so Gradle
+    // would refuse them on a -PcheckApi build without this.
+    if (jdkVersion == 25) {
         configurations.matching {
             it.name in setOf("compileClasspath", "runtimeClasspath", "testCompileClasspath", "testRuntimeClasspath")
         }.configureEach {

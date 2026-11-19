@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0] - Unreleased
+
+### Changed
+- **One companion download for every Minecraft version.** The same PluginPulse Companion jar now runs on 1.20.5 to 1.21.x and on 26.x, on Paper, Folia and Spigot, so there is no separate `-mc26` download any more. If you run the old `-mc26` jar, replace it with this one; your `config.yml` stays as it is.
+- **The companion says at startup what your server supports.** The console names the Minecraft version, the kind of server it found and whether plugins set to `hot-reload: true` can be updated without a restart there.
+- The library itself is unchanged: plugins that bundle it keep picking the same downloads as before.
+
 ## [0.10.3] - 2026-10-27
 
 ### Fixed

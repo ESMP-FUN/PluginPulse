@@ -101,6 +101,8 @@ final class PluginUnloader {
     }
 
     /** The server's command map. {@code Bukkit.getCommandMap()} is Paper-only; CraftServer has it on both. */
+    // TODO(26.4): re-test a hot reload on Paper 26.4: the command map, knownCommands,
+    // syncCommands and the plugin manager fields in PluginManagerAccess are all found by name.
     private static CommandMap commandMap() throws ReflectiveOperationException {
         Object server = Bukkit.getServer();
         return (CommandMap) server.getClass().getMethod("getCommandMap").invoke(server);

@@ -126,6 +126,8 @@ final class CommandRegistration {
         }
     }
 
+    // TODO(26.4): re-test on Paper 26.4 that knownCommands is still a removable map and
+    // syncCommands still exists (self-register, then hot reload a plugin that uses it).
     @SuppressWarnings("unchecked")
     private static Map<String, Command> knownCommands(CommandMap commandMap) {
         try {

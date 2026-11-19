@@ -30,7 +30,7 @@ tells you when one is out, and can install it for you.
 [LIST]
 [*][B]Server software:[/B] Paper, Folia, Spigot, or a Paper fork like Purpur
 [*][B]Proxy:[/B] Velocity 3.4 to 4.3, with the download that has [ICODE]velocity[/ICODE] in its name
-[*][B]Minecraft:[/B] 1.20.5 to 1.21.x with the plain download, 26.x (including 26.3) with the [ICODE]-mc26[/ICODE] download
+[*][B]Minecraft:[/B] 1.20.5 to 1.21.x and 26.x (including 26.3), all with the same download
 [*][B]Java:[/B] 21+ for 1.21.x or 25+ for 26.x
 [*][B]Anything else:[/B] Nothing. No dependencies.
 [/LIST]

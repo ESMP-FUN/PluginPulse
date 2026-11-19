@@ -27,23 +27,19 @@ jobs:
         env:
           JAVA_HOME: ${{ env.JAVA_HOME_21_X64 }}
 
-      # The 26.x companion reads the Paper 26 API, which needs JDK 25 to compile against.
-      - name: Build the 26.x companion
-        run: ./gradlew :pluginpulse-companion:shadowJar -PmcVariant=26
-        env:
-          JAVA_HOME: ${{ env.JAVA_HOME_25_X64 }}
-
       - name: Extract changelog section
         run: |
           awk '/^## \[/{n++} n==1' CHANGELOG.md > RELEASE_NOTES.md
           [ -s RELEASE_NOTES.md ] || echo "See CHANGELOG.md" > RELEASE_NOTES.md
 
+      # One Paper jar for every Minecraft version, and the Velocity jar. Servers still
+      # on an old -mc26 companion find no tag ending in -mc26 on GitHub, so they are
+      # offered the newest release, this one.
       - name: Create release
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           gh release create "$GITHUB_REF_NAME" \
             "pluginpulse-companion/build/libs/pluginpulse-companion-$VERSION.jar" \
-            "pluginpulse-companion/build/libs/pluginpulse-companion-$VERSION-mc26.jar" \
             "pluginpulse-companion-velocity/build/libs/pluginpulse-companion-velocity-$VERSION.jar" \
             --title "PluginPulse-$VERSION" --notes-file RELEASE_NOTES.md
         env:

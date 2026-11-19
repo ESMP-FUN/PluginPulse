@@ -1,0 +1,14 @@
+PluginPulse - Source Availability
+
+This plugin is source-available, not open-source.
+
+The complete source code is available at:
+
+https://github.com/ESMP-FUN/PluginPulse
+
+Please refer to the repository for the applicable
+license and usage conditions.
+
+Author: darkstarworks
+For: https://ESMP.fun
+Modrinth: https://modrinth.com/organization/esmp

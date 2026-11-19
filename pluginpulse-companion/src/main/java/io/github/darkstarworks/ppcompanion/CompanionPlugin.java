@@ -39,6 +39,7 @@ public final class CompanionPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        getLogger().info(ServerSupport.detect().startupLine());
         // Each target's updater registers tasks and a listener in the target's
         // name, which the server refuses until that target is enabled. Plugins
         // enable in an order we don't control, so wait for the first tick, by
