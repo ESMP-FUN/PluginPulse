@@ -16,7 +16,7 @@ jobs:
           java-version: |
             25
             21
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@v5
       - run: ./gradlew build
         env:
           JAVA_HOME: ${{ env.JAVA_HOME_21_X64 }}
