@@ -16,6 +16,7 @@ dependencies {
 // Same relocation as the Paper companion; its own package can't clash with it.
 tasks.shadowJar {
     archiveClassifier.set("")
+    from(rootProject.file("SOURCE-AVAILABLE.txt"))
     relocate("io.github.darkstarworks.pluginpulse", "io.github.darkstarworks.ppcompanion.pulse")
 }
 

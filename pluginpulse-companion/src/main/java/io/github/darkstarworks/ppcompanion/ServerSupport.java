@@ -27,6 +27,7 @@ enum ServerSupport {
     static ServerSupport detect() {
         try {
             if (classExists("io.papermc.paper.threadedregions.RegionizedServer")) return FOLIA;
+            if (classExists("io.papermc.paper.plugin.manager.PaperPluginManagerImpl")) return PAPER;
             Object manager = Bukkit.getPluginManager();
             if (findField(manager.getClass(), "paperPluginManager") != null) return PAPER;
             if (findField(manager.getClass(), "plugins") != null

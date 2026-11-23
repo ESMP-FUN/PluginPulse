@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -62,6 +63,7 @@ public abstract class UpdateEngine<S> {
     private volatile UpdateCheckResult lastResult;
     private volatile Map<String, String> downloadHeaders = Map.of();
     private volatile String stagedVersion;
+    private final AtomicBoolean staging = new AtomicBoolean();
     private volatile boolean stopped;
     private Runnable cancelPeriodic;
 
@@ -414,6 +416,10 @@ public abstract class UpdateEngine<S> {
             reply(sender, info.version() + " is already downloaded. To finish, " + applyHint() + ".");
             return;
         }
+        if (staging.get()) {
+            reply(sender, "a download is already in progress.");
+            return;
+        }
         reply(sender, "downloading " + info.version() + " in the background...");
         runAsync(() -> guarded(() -> {
             String message = stage(info);
@@ -445,6 +451,9 @@ public abstract class UpdateEngine<S> {
 
     /** Stage the given update. Returns a human-readable outcome line. */
     private String stage(UpdateInfo info) {
+        if (!staging.compareAndSet(false, true)) {
+            return "a download is already in progress.";
+        }
         try {
             DownloadPipeline.StagingResult result =
                     buildPipeline().downloadAndStage(info, downloadHeaders, currentJar(), currentVersion);
@@ -456,6 +465,8 @@ public abstract class UpdateEngine<S> {
         } catch (Exception e) {
             logger().log(Level.WARNING, "Update staging failed", e);
             return "update failed: " + e.getMessage();
+        } finally {
+            staging.set(false);
         }
     }
 

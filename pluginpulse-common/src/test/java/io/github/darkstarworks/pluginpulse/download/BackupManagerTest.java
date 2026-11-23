@@ -50,6 +50,15 @@ class BackupManagerTest {
     }
 
     @Test
+    void backupSanitizesUnsafeVersionCharacters() throws IOException {
+        Path jar = Files.write(root.resolve("MyPlugin.jar"), "content".getBytes());
+        BackupManager manager = new BackupManager(root.resolve("backups"), 3, LOGGER);
+        Path backedUp = manager.backup(jar, "1.0/dev:build 2");
+        assertTrue(Files.exists(backedUp));
+        assertTrue(backedUp.getFileName().toString().startsWith("MyPlugin-1.0_dev_build_2-"));
+    }
+
+    @Test
     void pendingUpdateStoreRoundTrip() {
         PendingUpdateStore store = new PendingUpdateStore(root.resolve("pending.json"), LOGGER);
         assertNull(store.load());

@@ -1,5 +1,6 @@
 package io.github.darkstarworks.pluginpulse.notify;
 
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -23,5 +24,10 @@ final class AdventureText {
     /** Deserialize and send to the server console. */
     static void console(String miniMessage) {
         Bukkit.getConsoleSender().sendMessage(MiniMessage.miniMessage().deserialize(miniMessage));
+    }
+
+    /** Send literal text to the server console without parsing MiniMessage tags. */
+    static void consolePlain(String plainText) {
+        Bukkit.getConsoleSender().sendMessage(Component.text(plainText));
     }
 }

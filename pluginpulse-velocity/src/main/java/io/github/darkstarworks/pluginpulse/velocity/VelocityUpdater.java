@@ -360,7 +360,7 @@ public final class VelocityUpdater {
             CommandSource console = console();
             sendNotice(console, templates.render(NoticeTemplates.KEY_CONSOLE, currentVersion(), info));
             for (String line : info.changelog().split("\n")) {
-                if (!line.isBlank()) sendNotice(console, line);
+                if (!line.isBlank()) console.sendMessage(Component.text(line));
             }
         }
 

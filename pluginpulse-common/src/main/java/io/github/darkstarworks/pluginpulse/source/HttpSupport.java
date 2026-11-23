@@ -59,7 +59,7 @@ public final class HttpSupport {
         return response.body();
     }
 
-    /** The underlying client, for download streaming in later phases. */
+    /** The underlying client, for streaming downloads. */
     public HttpClient client() {
         return client;
     }

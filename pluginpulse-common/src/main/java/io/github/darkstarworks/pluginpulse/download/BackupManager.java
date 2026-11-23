@@ -34,7 +34,8 @@ public final class BackupManager {
     public Path backup(Path currentJar, String version) throws IOException {
         Files.createDirectories(backupDir);
         String base = stripExtension(currentJar.getFileName().toString());
-        Path target = backupDir.resolve(base + "-" + version + "-" + LocalDateTime.now().format(STAMP) + ".jar.bak");
+        String safeVersion = sanitizeVersion(version);
+        Path target = backupDir.resolve(base + "-" + safeVersion + "-" + LocalDateTime.now().format(STAMP) + ".jar.bak");
         Files.copy(currentJar, target, StandardCopyOption.REPLACE_EXISTING);
         prune();
         return target;
@@ -77,5 +78,11 @@ public final class BackupManager {
     private static String stripExtension(String name) {
         int dot = name.lastIndexOf('.');
         return dot > 0 ? name.substring(0, dot) : name;
+    }
+
+    private static String sanitizeVersion(String version) {
+        if (version == null || version.isBlank()) return "unknown";
+        String cleaned = version.trim().replaceAll("[^A-Za-z0-9._+\\-]", "_");
+        return cleaned.isEmpty() ? "unknown" : cleaned;
     }
 }

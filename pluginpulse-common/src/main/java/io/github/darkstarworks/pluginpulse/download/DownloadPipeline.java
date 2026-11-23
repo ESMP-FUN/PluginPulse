@@ -63,7 +63,7 @@ public final class DownloadPipeline {
         Files.createDirectories(tmpDir);
         String fileName = info.fileName() != null ? info.fileName() : "update-" + info.version() + ".jar";
         // The published name only labels messages; it never becomes a path.
-        Path tmp = tmpDir.resolve("download.part");
+        Path tmp = Files.createTempFile(tmpDir, "download-", ".part");
         try {
             download(info.downloadUrl(), headers, tmp);
 

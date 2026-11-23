@@ -2,10 +2,18 @@
 
 ## [0.11.0] - Unreleased
 
+### Added
+- **Tab completion, clickable buttons, and `ignore` / `unignore` in the companion plugin.** Typing `/pluginpulse` now completes actions, managed plugin names and available versions, Paper update notices include clickable download and ignore buttons, and both `/pluginpulse` and `/pulseproxy` support `ignore <plugin> <version>` and `unignore <plugin> <version>`.
+
 ### Changed
 - **One companion download for every Minecraft version.** The same PluginPulse Companion jar now runs on 1.20.5 to 1.21.x and on 26.x, on Paper, Folia and Spigot, so there is no separate `-mc26` download any more. If you run the old `-mc26` jar, replace it with this one; your `config.yml` stays as it is.
 - **The companion says at startup what your server supports.** The console names the Minecraft version, the kind of server it found and whether plugins set to `hot-reload: true` can be updated without a restart there.
-- The library itself is unchanged: plugins that bundle it keep picking the same downloads as before.
+
+### Fixed
+- **Running two downloads of the same plugin at once no longer clashes.** Clicking download twice or overlapping with `auto-stage` now skips the duplicate download instead of writing to the same temporary file.
+- **Reloading the companion plugin is safe on Folia and Velocity** while commands or tab completion are in use.
+- **Backups work when a plugin's version string contains slashes, colons or spaces,** and remote changelog lines are logged as plain text so HTML or markup in release notes is not swallowed.
+- **The default placeholder email in `config.yml` is no longer sent** in API requests if left unchanged.
 
 ## [0.10.3] - 2026-10-27
 

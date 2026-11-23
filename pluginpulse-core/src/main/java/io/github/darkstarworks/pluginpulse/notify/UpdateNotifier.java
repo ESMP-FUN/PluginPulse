@@ -47,7 +47,7 @@ public final class UpdateNotifier {
         if (ADVENTURE_PRESENT) {
             AdventureText.console(templates.render(KEY_CONSOLE, current, info));
             for (String line : info.changelog().split("\n")) {
-                if (!line.isBlank()) AdventureText.console(line);
+                if (!line.isBlank()) AdventureText.consolePlain(line);
             }
         } else {
             Bukkit.getConsoleSender().sendMessage(templates.plainConsole(current, info));

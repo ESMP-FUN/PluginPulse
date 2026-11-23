@@ -64,7 +64,7 @@ public final class PluginPulse {
             java.util.List<UpdateSource> sources = SourceConfig.sources(cfg::get, SourceConfig.Platform.BUKKIT,
                     plugin.getLogger(), "PluginPulse", "in pluginpulse.yml");
             if (sources.isEmpty()) {
-                plugin.getLogger().warning("PluginPulse: pluginpulse.yml has no modrinth/github/hangar/jenkins source, updater disabled.");
+                plugin.getLogger().warning("PluginPulse: pluginpulse.yml has no modrinth/github/hangar/builtbybit/jenkins source, updater disabled.");
                 return null;
             }
 

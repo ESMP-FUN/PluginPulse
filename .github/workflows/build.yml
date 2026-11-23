@@ -20,7 +20,10 @@ jobs:
       - run: ./gradlew build
         env:
           JAVA_HOME: ${{ env.JAVA_HOME_21_X64 }}
-      # Compile the Paper side against the newest Paper API as well.
-      - run: ./gradlew compileJava -PcheckApi=26.3.build.249-stable
+      # Compile and test the Paper side against the newest Paper API as well.
+      - run: ./gradlew test -PcheckApi=26.3.build.249-stable
         env:
           JAVA_HOME: ${{ env.JAVA_HOME_25_X64 }}
+      - name: Test web injector engine
+        working-directory: tools/web-engine-test
+        run: npm ci && node test.mjs

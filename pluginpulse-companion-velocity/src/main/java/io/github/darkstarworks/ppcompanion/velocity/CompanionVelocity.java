@@ -10,6 +10,7 @@ import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.plugin.PluginContainer;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
+import io.github.darkstarworks.pluginpulse.UpdateInfo;
 import io.github.darkstarworks.pluginpulse.UpdateMode;
 import io.github.darkstarworks.pluginpulse.engine.ConfigView;
 import io.github.darkstarworks.pluginpulse.engine.SourceConfig;
@@ -27,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -41,14 +43,15 @@ import java.util.Optional;
 public final class CompanionVelocity {
 
     static final String PERMISSION = "pluginpulse.admin";
+    private static final List<String> ACTIONS =
+            List.of("list", "check", "download", "ignore", "unignore", "restore", "reload");
 
     private final ProxyServer proxy;
     private final Logger logger;
     private final Path dataDirectory;
-    /** id -> live updater for each managed, installed target. */
-    private final Map<String, VelocityUpdater> updaters = new LinkedHashMap<>();
-    /** name -> why a configured plugin isn't being managed. */
-    private final Map<String, String> skipped = new LinkedHashMap<>();
+    /** Immutable snapshots swapped on start/reload/stop so async command threads never race. */
+    private volatile Map<String, VelocityUpdater> updaters = Map.of();
+    private volatile Map<String, String> skipped = Map.of();
 
     @Inject
     public CompanionVelocity(ProxyServer proxy, Logger logger, @DataDirectory Path dataDirectory) {
@@ -74,54 +77,64 @@ public final class CompanionVelocity {
         stopAll(true);
     }
 
-    private void startAll() {
+    private synchronized void startAll() {
         ConfigView config = loadConfig();
         String contact = contact(config);
         long intervalHours = Math.max(1L, config.number("check-interval-hours", 6L));
         boolean holdNew = config.bool("hold-new-updates", false);
         long holdHours = Math.max(1L, config.number("hold-new-updates-hours", 18L));
 
+        Map<String, VelocityUpdater> newUpdaters = new LinkedHashMap<>();
+        Map<String, String> newSkipped = new LinkedHashMap<>();
+
         Map<?, ?> plugins = config.get("plugins") instanceof Map<?, ?> m ? m : Map.of();
         if (plugins.isEmpty()) {
+            this.updaters = Map.of();
+            this.skipped = Map.of();
             logger.info("No plugins configured yet: edit config.yml and run /pulseproxy reload.");
             return;
         }
+        Defaults defaults = new Defaults(contact, intervalHours, holdNew, holdHours);
         for (Map.Entry<?, ?> e : plugins.entrySet()) {
             String name = String.valueOf(e.getKey());
             if (!(e.getValue() instanceof Map<?, ?> entry)) {
-                skipped.put(name, "this entry is not set up right in config.yml");
+                newSkipped.put(name, "this entry is not set up right in config.yml");
                 continue;
             }
-            startTarget(name, ConfigView.of(entry), new Defaults(contact, intervalHours, holdNew, holdHours));
+            startTarget(name, ConfigView.of(entry), defaults, newUpdaters, newSkipped);
         }
-        logger.info("Managing {} plugin(s); {} skipped.", updaters.size(), skipped.size());
+        this.updaters = Collections.unmodifiableMap(newUpdaters);
+        this.skipped = Collections.unmodifiableMap(newSkipped);
+        logger.info("Managing {} plugin(s); {} skipped.", newUpdaters.size(), newSkipped.size());
     }
 
     /** The top-level config values every entry starts from before its own overrides. */
     private record Defaults(String contact, long intervalHours, boolean holdNew, long holdHours) {
     }
 
-    private void startTarget(String name, ConfigView entry, Defaults defaults) {
+    private void startTarget(String name, ConfigView entry, Defaults defaults,
+                             Map<String, VelocityUpdater> newUpdaters,
+                             Map<String, String> newSkipped) {
         PluginContainer target = findPlugin(name).orElse(null);
         if (target == null) {
-            skipped.put(name, "not installed (use the id or name shown by /velocity plugins)");
+            newSkipped.put(name, "not installed (use the id or name shown by /velocity plugins)");
             return;
         }
         String id = target.getDescription().getId();
         if (target.getDescription().getSource().isEmpty()) {
-            skipped.put(name, "built into the proxy, so it can't be updated");
+            newSkipped.put(name, "built into the proxy, so it can't be updated");
             return;
         }
 
         List<UpdateSource> sources = SourceConfig.sources(entry, SourceConfig.Platform.VELOCITY,
                 JulBridge.wrap(logger), name, "for this entry");
         if (sources.isEmpty()) {
-            skipped.put(name, "no modrinth/github/hangar/jenkins source configured");
+            newSkipped.put(name, "no modrinth/github/hangar/builtbybit/jenkins source configured");
             return;
         }
         UpdateMode mode = SourceConfig.parseMode(entry.string("mode", "notify"));
         if (mode == null) {
-            skipped.put(name, "mode: off");
+            newSkipped.put(name, "mode: off");
             return;
         }
         boolean holdNew = entry.bool("hold-new-updates", defaults.holdNew());
@@ -151,9 +164,9 @@ public final class CompanionVelocity {
 
             VelocityUpdater updater = builder.build();
             updater.start();
-            updaters.put(id, updater);
+            newUpdaters.put(id, updater);
         } catch (Exception e) {
-            skipped.put(name, "failed to start: " + e.getMessage());
+            newSkipped.put(name, "failed to start: " + e.getMessage());
             logger.warn("Could not manage {}: {}", name, e.getMessage());
         }
     }
@@ -168,10 +181,11 @@ public final class CompanionVelocity {
     }
 
     /** @param applyStaged true while the proxy stops, so downloaded updates go in place */
-    private void stopAll(boolean applyStaged) {
-        updaters.values().forEach(u -> u.shutdown(applyStaged));
-        updaters.clear();
-        skipped.clear();
+    private synchronized void stopAll(boolean applyStaged) {
+        Map<String, VelocityUpdater> current = this.updaters;
+        this.updaters = Map.of();
+        this.skipped = Map.of();
+        current.values().forEach(u -> u.shutdown(applyStaged));
     }
 
     // ==== Config ====
@@ -212,13 +226,16 @@ public final class CompanionVelocity {
             switch (action) {
                 case "list", "status" -> sendStatus(sender);
                 case "reload" -> {
-                    stopAll(false);
-                    startAll();
+                    synchronized (CompanionVelocity.this) {
+                        stopAll(false);
+                        startAll();
+                    }
                     say(sender, "PluginPulse Companion reloaded: managing " + updaters.size() + " plugin(s).");
                 }
                 case "check", "download", "install", "restore", "apply" -> dispatch(sender, action, args);
+                case "ignore", "unignore" -> dispatchVersionAction(sender, action, invocation.alias(), args);
                 default -> say(sender, "Usage: /" + invocation.alias()
-                        + " [list|check|download|restore|reload] [plugin|all]");
+                        + " [list|check|download|ignore|unignore|restore|reload] [plugin|all]");
             }
         }
 
@@ -226,12 +243,29 @@ public final class CompanionVelocity {
         public List<String> suggest(Invocation invocation) {
             String[] args = invocation.arguments();
             if (args.length <= 1) {
-                return List.of("list", "check", "download", "restore", "reload");
+                return filterPrefix(ACTIONS, args.length == 0 ? "" : args[0]);
             }
+            String action = args[0].toLowerCase(Locale.ROOT);
+            Map<String, VelocityUpdater> live = updaters;
             if (args.length == 2) {
-                List<String> names = new ArrayList<>(updaters.keySet());
-                names.add("all");
-                return names;
+                return switch (action) {
+                    case "check", "download", "install", "restore", "apply" -> {
+                        List<String> names = new ArrayList<>(live.keySet());
+                        names.add("all");
+                        yield filterPrefix(names, args[1]);
+                    }
+                    case "ignore", "unignore" -> filterPrefix(new ArrayList<>(live.keySet()), args[1]);
+                    default -> List.of();
+                };
+            }
+            if (args.length == 3 && "ignore".equals(action)) {
+                VelocityUpdater target = resolve(live, args[1]);
+                if (target != null) {
+                    UpdateInfo info = target.pendingUpdate() != null ? target.pendingUpdate() : target.heldUpdate();
+                    if (info != null) {
+                        return filterPrefix(List.of(info.version()), args[2]);
+                    }
+                }
             }
             return List.of();
         }
@@ -239,39 +273,69 @@ public final class CompanionVelocity {
 
     /** Run an update action against one named target, or "all" (default). */
     private void dispatch(CommandSource sender, String action, String[] args) {
+        Map<String, VelocityUpdater> live = this.updaters;
         String targetArg = args.length >= 2 ? args[1] : "all";
-        if (updaters.isEmpty()) {
+        if (live.isEmpty()) {
             say(sender, "No plugins are currently being managed.");
             return;
         }
         if ("all".equalsIgnoreCase(targetArg)) {
-            updaters.forEach((id, updater) -> {
+            live.forEach((id, updater) -> {
                 say(sender, "[" + id + "]");
                 updater.handle(sender, new String[]{action});
             });
             return;
         }
-        VelocityUpdater updater = resolve(targetArg);
+        VelocityUpdater updater = resolve(live, targetArg);
         if (updater == null) {
-            say(sender, "Not a managed plugin: " + targetArg + ". Managed: " + String.join(", ", updaters.keySet()));
+            say(sender, "Not a managed plugin: " + targetArg + ". Managed: " + String.join(", ", live.keySet()));
             return;
         }
         updater.handle(sender, new String[]{action});
     }
 
-    private VelocityUpdater resolve(String name) {
-        VelocityUpdater exact = updaters.get(name.toLowerCase(Locale.ROOT));
+    private void dispatchVersionAction(CommandSource sender, String action, String alias, String[] args) {
+        if (args.length < 3) {
+            say(sender, "Usage: /" + alias + " " + action + " <plugin> <version>");
+            return;
+        }
+        Map<String, VelocityUpdater> live = this.updaters;
+        VelocityUpdater updater = resolve(live, args[1]);
+        if (updater == null) {
+            say(sender, "Not a managed plugin: " + args[1]
+                    + (live.isEmpty() ? "." : ". Managed: " + String.join(", ", live.keySet())));
+            return;
+        }
+        updater.handle(sender, new String[]{action, args[2]});
+    }
+
+    private VelocityUpdater resolve(Map<String, VelocityUpdater> live, String name) {
+        VelocityUpdater exact = live.get(name.toLowerCase(Locale.ROOT));
         if (exact != null) return exact;
-        return findPlugin(name).map(p -> updaters.get(p.getDescription().getId())).orElse(null);
+        return findPlugin(name).map(p -> live.get(p.getDescription().getId())).orElse(null);
     }
 
     private void sendStatus(CommandSource sender) {
-        say(sender, "PluginPulse Companion: managing " + updaters.size() + " plugin(s):");
-        updaters.forEach((id, updater) -> say(sender, " - " + id + ": " + updater.statusLine()));
-        if (!skipped.isEmpty()) {
+        Map<String, VelocityUpdater> live = this.updaters;
+        Map<String, String> skippedNow = this.skipped;
+        say(sender, "PluginPulse Companion: managing " + live.size() + " plugin(s):");
+        live.forEach((id, updater) -> say(sender, " - " + id + ": " + updater.statusLine()));
+        if (!skippedNow.isEmpty()) {
             say(sender, "Skipped:");
-            skipped.forEach((name, why) -> say(sender, " - " + name + ": " + why));
+            skippedNow.forEach((name, why) -> say(sender, " - " + name + ": " + why));
         }
+    }
+
+    private static List<String> filterPrefix(List<String> options, String prefix) {
+        if (prefix == null || prefix.isEmpty()) return options;
+        String lower = prefix.toLowerCase(Locale.ROOT);
+        List<String> matches = new ArrayList<>();
+        for (String opt : options) {
+            if (opt.toLowerCase(Locale.ROOT).startsWith(lower)) {
+                matches.add(opt);
+            }
+        }
+        return matches;
     }
 
     private static void say(CommandSource sender, String message) {
@@ -281,7 +345,7 @@ public final class CompanionVelocity {
     /** The contact to send, or empty while the shipped placeholder is still in place. */
     static String contact(ConfigView config) {
         String contact = config.string("user-agent-contact", "");
-        return contact.startsWith("PASTE-") ? "" : contact;
+        return contact.startsWith("PASTE-") || "you@example.com".equalsIgnoreCase(contact) ? "" : contact;
     }
 
     static Map<?, ?> parse(String yaml) {
