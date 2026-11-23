@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.11.0] - Unreleased
+## [0.11.0] - 2026-11-23
 
 ### Added
 - **Tab completion, clickable buttons, and `ignore` / `unignore` in the companion plugin.** Typing `/pluginpulse` now completes actions, managed plugin names and available versions, Paper update notices include clickable download and ignore buttons, and both `/pluginpulse` and `/pulseproxy` support `ignore <plugin> <version>` and `unignore <plugin> <version>`.
